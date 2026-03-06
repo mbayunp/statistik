@@ -4,8 +4,10 @@ const pegawaiController = require('../controllers/pegawaiController');
 
 router.get('/', pegawaiController.getAllPegawai);
 router.post('/', pegawaiController.createPegawai);
+
+router.put('/reorder', pegawaiController.reorderPegawai);
+
 router.put('/:id', pegawaiController.updatePegawai);
 router.delete('/:id', pegawaiController.deletePegawai);
 
-// WAJIB ADA BARIS INI:
 module.exports = router;

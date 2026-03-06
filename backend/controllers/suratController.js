@@ -1,8 +1,9 @@
 const db = require('../config/db');
 
-exports.getAllSurat = async (req, res) => {
+exports.getSuratByType = async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM surat_masuk ORDER BY id DESC");
+        const { type } = req.params; // 'masuk' atau 'keluar'
+        const [rows] = await db.query("SELECT * FROM surat WHERE jenis_surat = ? ORDER BY id DESC", [type]);
         res.json({ success: true, data: rows });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -11,27 +12,15 @@ exports.getAllSurat = async (req, res) => {
 
 exports.createSurat = async (req, res) => {
     try {
-        const { nomor_surat, asal_surat, tanggal_surat, tanggal_terima, perihal, keterangan } = req.body;
+        const { nomor_surat, instansi, tanggal_surat, tanggal_terima, perihal, keterangan, jenis_surat } = req.body;
         const file_surat = req.file ? req.file.filename : null;
 
-        // Pastikan nama kolom di bawah ini SAMA PERSIS dengan di database
-        const sql = "INSERT INTO surat_masuk (nomor_surat, asal_surat, tanggal_surat, tanggal_terima, perihal, keterangan, file_surat) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        
-        const values = [
-            nomor_surat || "-", 
-            asal_surat || "-", 
-            tanggal_surat || null, 
-            tanggal_terima || null, 
-            perihal || "-", 
-            keterangan || "-", 
-            file_surat
-        ];
+        const sql = "INSERT INTO surat (jenis_surat, nomor_surat, instansi, tanggal_surat, tanggal_terima, perihal, keterangan, file_surat) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        const values = [jenis_surat, nomor_surat, instansi, tanggal_surat, tanggal_terima, perihal, keterangan, file_surat];
 
         const [result] = await db.query(sql, values);
-        
-        res.status(201).json({ success: true, message: "Surat masuk berhasil dicatat", id: result.insertId });
+        res.status(201).json({ success: true, message: `Surat ${jenis_surat} berhasil dicatat`, id: result.insertId });
     } catch (error) {
-        console.error("ERROR DETAIL:", error); // Lihat ini di terminal backend!
         res.status(500).json({ success: false, message: error.message });
     }
 };
@@ -39,7 +28,7 @@ exports.createSurat = async (req, res) => {
 exports.deleteSurat = async (req, res) => {
     try {
         const { id } = req.params;
-        await db.query("DELETE FROM surat_masuk WHERE id=?", [id]);
+        await db.query("DELETE FROM surat WHERE id=?", [id]);
         res.json({ success: true, message: "Data surat berhasil dihapus" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

@@ -2,7 +2,8 @@ const db = require('../config/db');
 
 exports.getAllPegawai = async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM pegawai ORDER BY id DESC");
+        // PERBAIKAN: Ditambahkan ORDER BY urutan ASC agar data tampil sesuai urutan yang disimpan
+        const [rows] = await db.query("SELECT * FROM pegawai ORDER BY urutan ASC, id DESC");
         res.json({ success: true, data: rows });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -37,6 +38,19 @@ exports.deletePegawai = async (req, res) => {
         const { id } = req.params;
         await db.query("DELETE FROM pegawai WHERE id=?", [id]);
         res.json({ success: true, message: "Pegawai berhasil dihapus" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.reorderPegawai = async (req, res) => {
+    try {
+        const { data } = req.body;
+        for (let item of data) {
+            await db.query("UPDATE pegawai SET urutan = ? WHERE id = ?", [item.urutan, item.id]);
+        }
+        
+        res.json({ success: true, message: "Urutan berhasil diperbarui" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

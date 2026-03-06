@@ -13,7 +13,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// PASTI KAN NAMA FUNGSI SESUAI (getAllKegiatan, bukan getAll)
 router.get('/', kegiatanController.getAllKegiatan); 
 router.post('/', upload.single('gambar'), kegiatanController.create);
 router.delete('/:id', kegiatanController.delete);

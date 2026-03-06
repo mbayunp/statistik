@@ -8,31 +8,32 @@ import Register from './pages/Register';
 import Tentang from './pages/Tentang';
 import Kegiatan from './pages/Kegiatan';
 
-// Import Halaman Admin
 import Dashboard from './pages/admin/Dashboard';
 import RekapanKegiatan from './pages/admin/RekapanKegiatan';
 import KegiatanPublik from './pages/admin/KegiatanPublik';
 import DataPegawai from './pages/admin/DataPegawai';
-import SuratMasuk from './pages/admin/SuratMasuk';
+import SuratPage from './pages/admin/SuratPage';
 import Kontak from './pages/Kontak';
 import DaftarStatistikAdmin from './pages/admin/DaftarStatistik';
 import AdminLayout from './pages/admin/AdminLayout';
+import BerkasArsip from './pages/admin/BerkasArsip';
+import KeuanganPage from './pages/admin/KeuanganPage';
+import PenugasanPage from './pages/admin/PenugasanPage';
+import AsetBidang from './pages/admin/AsetBidang';
 
-// 1. Komponen untuk memproteksi halaman Admin
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const token = localStorage.getItem('token'); // Ambil token dari storage
+  const token = localStorage.getItem('token');
   if (!token) {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
 };
 
-// 2. Layout khusus halaman Publik (Navbar + Footer)
 const PublicLayout = () => (
   <div className="flex flex-col min-h-screen">
     <Navbar />
     <main className="flex-grow">
-      <Outlet /> {/* Halaman anak akan muncul di sini */}
+      <Outlet />
     </main>
     <Footer />
   </div>
@@ -50,16 +51,15 @@ const App: React.FC = () => {
           <Route path="/kontak" element={<Kontak />} />
         </Route>
 
-        {/* === GRUP AUTH (Tanpa Navbar/Footer) === */}
+        {/* === GRUP AUTH === */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* === GRUP HALAMAN ADMIN (Diproteksi) === */}
+        {/* === GRUP HALAMAN ADMIN === */}
         <Route 
           path="/admin" 
           element={
             <ProtectedRoute>
-              {/* Bungkus Outlet dengan AdminLayout di sini! */}
               <AdminLayout>
                 <Outlet />
               </AdminLayout>
@@ -71,8 +71,17 @@ const App: React.FC = () => {
           <Route path="rekapan" element={<RekapanKegiatan />} />
           <Route path="kegiatan" element={<KegiatanPublik />} />
           <Route path="pegawai" element={<DataPegawai />} />
-          <Route path="surat" element={<SuratMasuk />} />
+          
+          <Route path="surat" element={<Navigate to="/admin/surat/masuk" replace />} />
+          <Route path="surat/:type" element={<SuratPage />} />
+          
           <Route path="daftar-kegiatan" element={<DaftarStatistikAdmin />} />
+          <Route path="berkas-arsip" element={<BerkasArsip />} />
+          <Route path="keuangan/:jenis" element={<KeuanganPage />} />
+          <Route path="keuangan/:jenis/:kategori" element={<KeuanganPage />} />
+          <Route path="penugasan" element={<PenugasanPage />} />
+          <Route path="aset" element={<AsetBidang />} />
+
         </Route>
 
         {/* 404 - Page Not Found */}

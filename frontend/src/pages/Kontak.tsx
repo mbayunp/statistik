@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { 
   Mail, Globe, Instagram, MapPin, Clock, 
-  Send, Phone, ExternalLink, MessageSquare, 
+  Send, Phone, MessageSquare, 
   Users, Info, CheckCircle2 
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
@@ -25,8 +25,8 @@ const KontakPage: React.FC = () => {
       await axios.post(`${API_BASE_URL}/api/contact`, formData);
       setStatus({ type: 'success', msg: 'Pesan Anda berhasil dikirim! Admin kami akan segera menghubungi Anda.' });
       setFormData({ nama: '', email: '', subjek: '', pesan: '' });
-    } catch (err) {
-      setStatus({ type: 'error', msg: 'Gagal mengirim pesan. Silakan coba lagi nanti atau hubungi melalui email langsung.' });
+    } catch (error) {
+      setStatus({ type: 'error', msg: 'Maaf, terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.' });
     } finally {
       setLoading(false);
     }
@@ -35,7 +35,7 @@ const KontakPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       
-      {/* 1️⃣ HERO KONTAK */}
+      {/* HERO KONTAK */}
       <section className="bg-brand-dark text-white py-24 relative overflow-hidden">
         <div className="container mx-auto px-6 relative z-10 text-center">
           <h1 className="text-4xl md:text-5xl font-black mb-6 uppercase tracking-tighter">Hubungi <span className="text-brand-primary">Kami</span></h1>
@@ -48,7 +48,7 @@ const KontakPage: React.FC = () => {
 
       <div className="container mx-auto px-6 -mt-12 relative z-20 pb-20">
         
-        {/* 2️⃣ INFORMASI KANTOR & KONTAK RESMI */}
+        {/* INFORMASI KANTOR & KONTAK RESMI */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
           {/* Card Alamat */}
           <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-white flex flex-col items-center text-center group hover:-translate-y-2 transition-all">
@@ -57,7 +57,6 @@ const KontakPage: React.FC = () => {
             </div>
             <h3 className="text-xl font-black text-slate-800 mb-4 uppercase tracking-tight">Alamat Kantor</h3>
             <p className="text-slate-500 font-medium leading-relaxed">
-              Kompleks Pemerintah Kabupaten Garut<br />
               Jl. Pahlawan No. 24, Garut<br />
               Jawa Barat, Indonesia
             </p>
@@ -90,7 +89,7 @@ const KontakPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 3️⃣ MAPS & JAM LAYANAN */}
+        {/* MAPS & JAM LAYANAN */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
           <div className="lg:col-span-8 h-[500px] bg-white rounded-[3rem] overflow-hidden shadow-sm border-8 border-white">
             <iframe 
@@ -130,7 +129,7 @@ const KontakPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 4️⃣ LAYANAN & FORMULIR */}
+        {/* LAYANAN & FORMULIR */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start bg-white p-10 md:p-16 rounded-[4rem] border border-slate-100 shadow-sm">
           <div>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary/10 text-brand-primary rounded-full text-xs font-black uppercase tracking-widest mb-6">
@@ -200,7 +199,7 @@ const KontakPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 5️⃣ AJAKAN KOLABORASI */}
+        {/* AJAKAN KOLABORASI */}
         <section className="mt-24 bg-gradient-to-r from-brand-primary to-blue-600 rounded-[4rem] p-12 md:p-20 text-white text-center relative overflow-hidden group">
           <div className="relative z-10">
             <h2 className="text-3xl md:text-5xl font-black mb-6 uppercase tracking-tighter">Kolaborasi Data untuk Pembangunan</h2>
@@ -225,7 +224,6 @@ const KontakPage: React.FC = () => {
   );
 };
 
-// Sub-component untuk icon Database agar tidak perlu install Lucide ekstra
 const DatabaseIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
 );

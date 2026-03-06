@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { UserPlus, Edit, Trash2, Users, Search} from 'lucide-react';
+import { UserPlus, Edit, Trash2, Users, Search, GripVertical } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
 const DataPegawai: React.FC = () => {
@@ -15,13 +15,17 @@ const DataPegawai: React.FC = () => {
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ nip: '', nama: '', jabatan: '', golongan: '' });
 
+  // State untuk Drag and Drop
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
   const fetchPegawai = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/api/pegawai`);
       setPegawai(res.data.data);
-      setLoading(false);
     } catch (err) {
       console.error(err);
+    } finally {
       setLoading(false);
     }
   };
@@ -58,14 +62,59 @@ const DataPegawai: React.FC = () => {
       title: 'Hapus Pegawai?',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Ya, Hapus'
+      confirmButtonText: 'Ya, Hapus',
+      confirmButtonColor: '#ef4444'
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await axios.delete(`http://localhost:5000/api/pegawai/${id}`);
-        fetchPegawai();
-        Swal.fire('Terhapus', '', 'success');
+        try {
+          await axios.delete(`${API_BASE_URL}/api/pegawai/${id}`);
+          fetchPegawai();
+          Swal.fire('Terhapus', '', 'success');
+        } catch (error) {
+          Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus', 'error');
+        }
       }
     });
+  };
+
+  // === FUNGSI DRAG AND DROP TERBARU ===
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>) => {
+    e.preventDefault(); // Wajib di-prevent agar onDrop bisa tereksekusi
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLTableRowElement>, dropIndex: number) => {
+    e.preventDefault();
+    
+    // Jika tidak ada yang dipindahkan, hentikan
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    // 1. Ubah urutan secara visual terlebih dahulu
+    const newPegawai = [...pegawai];
+    const draggedItem = newPegawai[draggedIndex];
+    newPegawai.splice(draggedIndex, 1);
+    newPegawai.splice(dropIndex, 0, draggedItem);
+
+    setPegawai(newPegawai);
+    setDraggedIndex(null);
+
+    // 2. Simpan urutan terbaru ke database
+    try {
+      const reorderedData = newPegawai.map((p, index) => ({ id: p.id, urutan: index + 1 }));
+      await axios.put(`${API_BASE_URL}/api/pegawai/reorder`, { data: reorderedData });
+    } catch (error) {
+      console.error('Gagal menyimpan urutan baru ke database', error);
+      Swal.fire('Gagal', 'Urutan gagal disimpan ke server', 'error');
+      fetchPegawai(); // Kembalikan ke urutan semula jika API gagal
+    }
   };
 
   const filteredPegawai = pegawai.filter(p => 
@@ -81,12 +130,12 @@ const DataPegawai: React.FC = () => {
             <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3">
               <Users size={32} className="text-brand-primary" /> Manajemen Pegawai
             </h1>
-            <p className="text-slate-500 text-sm font-medium">Kelola data jabatan, golongan, dan identitas pegawai.</p>
+            <p className="text-slate-500 text-sm font-medium mt-1">Kelola data jabatan, golongan, dan identitas pegawai.</p>
           </div>
           
           <button 
             onClick={() => { setEditMode(false); setFormData({nip:'', nama:'', jabatan:'', golongan:''}); setShowModal(true); }}
-            className="bg-brand-dark text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand-primary transition-all shadow-lg"
+            className="bg-brand-dark text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary transition-all shadow-xl active:scale-95"
           >
             <UserPlus size={20} /> Tambah Pegawai
           </button>
@@ -94,20 +143,24 @@ const DataPegawai: React.FC = () => {
 
         {/* Search Bar */}
         <div className="bg-white p-4 rounded-2xl mb-6 shadow-sm border border-slate-200 flex items-center gap-3">
-          <Search className="text-slate-400" size={20} />
+          <div className="bg-slate-100 p-2 rounded-xl text-slate-400">
+            <Search size={20} />
+          </div>
           <input 
             type="text" 
             placeholder="Cari berdasarkan Nama atau NIP..." 
-            className="w-full bg-transparent outline-none text-sm font-medium"
+            className="w-full bg-transparent outline-none text-sm font-bold text-slate-700 placeholder:text-slate-400"
             onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchTerm}
           />
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs font-black text-slate-400 uppercase tracking-widest">
+              <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="p-6 w-12 text-center">Urutan</th>
                 <th className="p-6">NIP</th>
                 <th className="p-6">Nama Pegawai</th>
                 <th className="p-6">Jabatan</th>
@@ -115,17 +168,29 @@ const DataPegawai: React.FC = () => {
                 <th className="p-6 text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
-              {filteredPegawai.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="p-6 font-mono text-xs text-brand-primary">{p.nip || '-'}</td>
-                  <td className="p-6 font-bold text-slate-800">{p.nama}</td>
-                  <td className="p-6">{p.jabatan || '-'}</td>
-                  <td className="p-6 text-center"><span className="bg-slate-100 px-3 py-1 rounded-full text-xs font-bold">{p.golongan || '-'}</span></td>
+            <tbody className="divide-y divide-slate-50">
+              {loading ? (
+                 <tr><td colSpan={6} className="p-10 text-center font-bold text-slate-400 animate-pulse">Memuat...</td></tr>
+              ) : filteredPegawai.map((p, index) => (
+                <tr 
+                  key={p.id} 
+                  draggable={searchTerm === ''}
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, index)}
+                  className={`hover:bg-slate-50/80 transition-colors group ${searchTerm === '' ? 'cursor-grab active:cursor-grabbing' : ''} ${draggedIndex === index ? 'opacity-40 bg-slate-100' : ''}`}
+                >
+                  <td className="p-6 text-center text-slate-300 group-hover:text-brand-primary">
+                    <GripVertical size={20} className="mx-auto" />
+                  </td>
+                  <td className="p-6 font-mono text-xs text-slate-500 font-bold">{p.nip || '-'}</td>
+                  <td className="p-6 font-bold text-slate-800 text-sm">{p.nama}</td>
+                  <td className="p-6 text-sm font-medium text-slate-600">{p.jabatan || '-'}</td>
+                  <td className="p-6 text-center"><span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider">{p.golongan || '-'}</span></td>
                   <td className="p-6">
                     <div className="flex justify-center gap-2">
-                      <button onClick={() => handleEdit(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit size={18} /></button>
-                      <button onClick={() => handleDelete(p.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                      <button onClick={() => handleEdit(p)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all"><Edit size={18} /></button>
+                      <button onClick={() => handleDelete(p.id)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"><Trash2 size={18} /></button>
                     </div>
                   </td>
                 </tr>
@@ -137,8 +202,8 @@ const DataPegawai: React.FC = () => {
 
       {/* MODAL FORM */}
       {showModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl animate-in zoom-in duration-300 overflow-hidden">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl animate-in zoom-in duration-300 overflow-hidden my-auto">
             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">
                 {editMode ? 'Edit Data Pegawai' : 'Tambah Pegawai Baru'}
@@ -150,14 +215,14 @@ const DataPegawai: React.FC = () => {
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">NIP (Opsional)</label>
                   <input 
-                    type="text" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm"
+                    type="text" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
                     value={formData.nip} onChange={(e) => setFormData({...formData, nip: e.target.value})}
                   />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Nama Lengkap</label>
                   <input 
-                    required type="text" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm"
+                    required type="text" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
                     value={formData.nama} onChange={(e) => setFormData({...formData, nama: e.target.value})}
                   />
                 </div>
@@ -165,27 +230,28 @@ const DataPegawai: React.FC = () => {
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Jabatan</label>
                     <input 
-                      type="text" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm"
+                      type="text" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
                       value={formData.jabatan} onChange={(e) => setFormData({...formData, jabatan: e.target.value})}
                     />
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Golongan</label>
                     <input 
-                      type="text" placeholder="Contoh: IV/a" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm"
+                      type="text" placeholder="Contoh: IV/a" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
                       value={formData.golongan} onChange={(e) => setFormData({...formData, golongan: e.target.value})}
                     />
                   </div>
                 </div>
               </div>
-              <button type="submit" className="w-full bg-brand-dark text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-brand-primary transition-all shadow-xl shadow-brand-primary/20">
+              <button type="submit" className="w-full bg-brand-dark text-white py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-brand-primary transition-all shadow-xl active:scale-[0.98] mt-4">
                 {editMode ? 'Simpan Perubahan' : 'Daftarkan Pegawai'}
               </button>
             </form>
           </div>
         </div>
       )}
-    </div>);
+    </div>
+  );
 };
 
 export default DataPegawai;

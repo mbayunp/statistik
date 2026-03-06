@@ -41,7 +41,6 @@ const KegiatanPage: React.FC = () => {
     }
   };
 
-  // Logic Filtering
   useEffect(() => {
     let result = allKegiatan;
 
@@ -73,7 +72,6 @@ const KegiatanPage: React.FC = () => {
     });
   };
 
-  // Hitung Statistik
   const stats = {
     total: allKegiatan.length,
     bulanan: allKegiatan.filter(k => k.tipe?.toLowerCase() === 'bulanan').length,
@@ -84,7 +82,7 @@ const KegiatanPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
       
-      {/* 1️⃣ HERO SECTION */}
+      {/* HERO SECTION */}
       <section className="bg-brand-dark text-white py-20 relative overflow-hidden">
         <div className="container mx-auto px-6 relative z-10">
           <h1 className="text-4xl md:text-5xl font-black mb-6 uppercase tracking-tighter">
@@ -99,7 +97,7 @@ const KegiatanPage: React.FC = () => {
 
       <div className="container mx-auto px-6 -mt-10 relative z-20">
         
-        {/* 2️⃣ STATISTIK RINGKAS */}
+        {/* STATISTIK RINGKAS */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           {[
             { label: 'Total Kegiatan', val: stats.total, icon: <Activity />, color: 'blue' },
@@ -119,7 +117,7 @@ const KegiatanPage: React.FC = () => {
           ))}
         </div>
 
-        {/* 3️⃣ FILTER KEGIATAN */}
+        {/* FILTER KEGIATAN */}
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-12 flex flex-wrap items-center gap-6">
           <div className="flex-1 min-w-[300px] relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -148,7 +146,7 @@ const KegiatanPage: React.FC = () => {
           </select>
         </div>
 
-        {/* 4️⃣ KEGIATAN TERBARU (CARD GRID) */}
+        {/* KEGIATAN TERBARU (CARD GRID) */}
         <div className="mb-20">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-black text-brand-dark uppercase tracking-tight">Eksplorasi Kegiatan</h2>
@@ -181,7 +179,7 @@ const KegiatanPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 5️⃣ REKAPAN TABEL KEGIATAN */}
+        {/* REKAPAN TABEL KEGIATAN */}
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden mb-20">
           <div className="p-8 border-b border-slate-50 flex justify-between items-center">
             <h2 className="text-xl font-black text-brand-dark uppercase tracking-tight">Daftar Rekapitulasi</h2>
@@ -229,7 +227,7 @@ const KegiatanPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 6️⃣ GALERI DOKUMENTASI */}
+        {/* GALERI DOKUMENTASI */}
         <div className="pb-24">
           <div className="flex items-center gap-4 mb-10">
             <ImageIcon className="text-brand-primary" size={32} />

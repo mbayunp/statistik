@@ -3,10 +3,8 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-// 1. Inisialisasi Express
 const app = express();
 
-// 2. Konfigurasi CORS
 const corsOptions = {
   origin: '*',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -14,33 +12,35 @@ const corsOptions = {
   optionsSuccessStatus: 204
 };
 
-// 3. Middleware Dasar
-app.use(cors(corsOptions)); // Gunakan corsOptions yang sudah didefinisikan (Hapus app.use(cors()) satunya)
+app.use(cors(corsOptions));
 
-// Menambah limit ukuran payload (Mencegah ERR_CONNECTION_RESET saat upload gambar besar)
 app.use(express.json({ limit: '10mb' })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true })); 
 
-// 4. Static Folder
-// Membuat folder uploads dapat diakses secara publik
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
 
-// 5. Routes
 const kegiatanRoutes = require('./routes/kegiatanRoutes');
 const authRoutes = require('./routes/authRoutes');
 const rekapanRoutes = require('./routes/rekapanRoutes');
 const pegawaiRoutes = require('./routes/pegawaiRoutes');
 const suratRoutes = require('./routes/suratRoutes');
 const statistikRoutes = require('./routes/statistikRoutes');
+const BerkasRoutes = require('./routes/berkasRoutes');
+const KeuanganRoutes = require('./routes/keuanganRoutes');
+const penugasanRoutes = require('./routes/penugasanRoutes');
+const asetRoutes = require('./routes/asetRoutes');
 
+app.use('/api/berkas', BerkasRoutes);
 app.use('/api/kegiatan', kegiatanRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/rekapan', rekapanRoutes);
+app.use('/api/aset', asetRoutes);
+app.use('/api/penugasan', penugasanRoutes);
 app.use('/api/pegawai', pegawaiRoutes);
-app.use('/api/surat-masuk', suratRoutes);
+app.use('/api/surat', suratRoutes);
 app.use('/api/statistik-sektoral', statistikRoutes);
+app.use('/api/keuangan', KeuanganRoutes);
 
-// 6. Test Route & Error Handling
 app.get('/', (req, res) => {
     res.json({ 
         message: "API Backend Berjalan Lancar 🚀",
@@ -48,7 +48,6 @@ app.get('/', (req, res) => {
     });
 });
 
-// Middleware Global Error Handler (Opsional tapi sangat membantu debug)
 app.use((err, req, res, next) => {
     console.error("Global Error Log:", err.stack);
     res.status(500).json({ 
@@ -63,6 +62,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server berjalan di semua interface (0.0.0.0:${PORT})`);
     console.log(`🏠 Akses lokal: http://localhost:${PORT}`);
-    // Ganti 10.50.14.217 dengan IP laptopmu yang muncul di ipconfig
     console.log(`🌐 Akses jaringan: http://10.50.14.217:${PORT}`); 
 });
