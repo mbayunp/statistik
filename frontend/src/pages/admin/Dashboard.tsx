@@ -13,7 +13,8 @@ import {
   Wallet,
   Briefcase,
   Monitor,
-  RefreshCw
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
@@ -27,7 +28,8 @@ const Dashboard: React.FC = () => {
     berkas: 0,
     keuangan: 0,
     penugasan: 0,
-    aset: 0
+    aset: 0,
+    rekapanPermohonan: 0 // State baru untuk Rekapan Permohonan
   });
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -37,7 +39,6 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       setIsRefreshing(true);
       
-      // Daftar semua endpoint API yang akan dihitung total datanya
       const endpoints = [
         { key: 'publikasi', url: `${API_BASE_URL}/api/kegiatan` },
         { key: 'suratMasuk', url: `${API_BASE_URL}/api/surat/masuk` },
@@ -45,32 +46,73 @@ const Dashboard: React.FC = () => {
         { key: 'rekapan', url: `${API_BASE_URL}/api/rekapan` },
         { key: 'pegawai', url: `${API_BASE_URL}/api/pegawai` },
         { key: 'berkas', url: `${API_BASE_URL}/api/berkas` },
-        { key: 'keuangan', url: `${API_BASE_URL}/api/keuangan` },
         { key: 'penugasan', url: `${API_BASE_URL}/api/penugasan` },
         { key: 'aset', url: `${API_BASE_URL}/api/aset` },
+        { key: 'keuangan_anggaran', url: `${API_BASE_URL}/api/keuangan?jenis=anggaran` },
+        { key: 'keuangan_modal', url: `${API_BASE_URL}/api/keuangan?jenis=pengadaan&kategori=modal` },
+        { key: 'keuangan_pegawai', url: `${API_BASE_URL}/api/keuangan?jenis=pengadaan&kategori=pegawai` }
       ];
 
-      // Menggunakan catch internal agar jika ada 1 tabel kosong/error, dashboard tetap jalan
-      const results = await Promise.all(
-        endpoints.map(ep => axios.get(ep.url).catch(() => ({ data: { data: [] } })))
+      const internalResults = await Promise.all(
+        endpoints.map(async (ep) => {
+          try {
+            const res = await axios.get(ep.url);
+            let count = 0;
+            
+            if (Array.isArray(res.data?.data)) {
+              count = res.data.data.length;
+            } else if (Array.isArray(res.data)) {
+              count = res.data.length;
+            } else if (Array.isArray(res.data?.rows)) {
+              count = res.data.rows.length;
+            }
+
+            return { key: ep.key, count };
+          } catch (error: any) {
+            console.error(`❌ Gagal memuat ${ep.key} (${ep.url}):`, error.message);
+            return { key: ep.key, count: 0 };
+          }
+        })
       );
 
+      // Ubah hasil array menjadi format object
+      const counts = internalResults.reduce((acc, item) => {
+        acc[item.key] = item.count;
+        return acc;
+      }, {} as Record<string, number>);
+
+      let totalPermohonan = 0;
+      try {
+        const resPermohonan = await axios.get('/api-garut/api/request-data/total');
+        const dataPermohonan = resPermohonan.data?.data || [];
+        
+        totalPermohonan = dataPermohonan.reduce((sum: number, item: any) => {
+          return sum + (item.jumlah_selesai + item.jumlah_ditolak + item.jumlah_diproses + item.dalam_pengajuan);
+        }, 0);
+      } catch (error) {
+        console.error("Gagal mengambil data Rekapan Permohonan Eksternal", error);
+      }
+
       setStats({
-        publikasi: results[0].data.data?.length || 0,
-        suratMasuk: results[1].data.data?.length || 0,
-        suratKeluar: results[2].data.data?.length || 0,
-        rekapan: results[3].data.data?.length || 0,
-        pegawai: results[4].data.data?.length || 0,
-        berkas: results[5].data.data?.length || 0,
-        keuangan: results[6].data.data?.length || 0,
-        penugasan: results[7].data.data?.length || 0,
-        aset: results[8].data.data?.length || 0,
+        publikasi: counts.publikasi || 0,
+        suratMasuk: counts.suratMasuk || 0,
+        suratKeluar: counts.suratKeluar || 0,
+        rekapan: counts.rekapan || 0,
+        pegawai: counts.pegawai || 0,
+        berkas: counts.berkas || 0,
+        penugasan: counts.penugasan || 0,
+        aset: counts.aset || 0,
+        
+        keuangan: (counts.keuangan_anggaran || 0) + (counts.keuangan_modal || 0) + (counts.keuangan_pegawai || 0),
+        
+        rekapanPermohonan: totalPermohonan
       });
+
     } catch (err) {
-      console.error("Gagal mengambil data dashboard", err);
+      console.error("Gagal mengambil data dashboard secara keseluruhan", err);
     } finally {
       setLoading(false);
-      setTimeout(() => setIsRefreshing(false), 500); // Animasi putaran tombol
+      setTimeout(() => setIsRefreshing(false), 500);
     }
   };
 
@@ -89,6 +131,7 @@ const Dashboard: React.FC = () => {
     { label: 'Lap. Keuangan', value: stats.keuangan, icon: <Wallet size={24} />, color: 'bg-teal-50', textColor: 'text-teal-600' },
     { label: 'Form Penugasan', value: stats.penugasan, icon: <Briefcase size={24} />, color: 'bg-purple-50', textColor: 'text-purple-600' },
     { label: 'Aset Bidang', value: stats.aset, icon: <Monitor size={24} />, color: 'bg-cyan-50', textColor: 'text-cyan-600' },
+    { label: 'Rekap Permohonan', value: stats.rekapanPermohonan, icon: <Database size={24} />, color: 'bg-fuchsia-50', textColor: 'text-fuchsia-600' },
   ];
 
   return (

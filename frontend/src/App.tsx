@@ -20,6 +20,7 @@ import BerkasArsip from './pages/admin/BerkasArsip';
 import KeuanganPage from './pages/admin/KeuanganPage';
 import PenugasanPage from './pages/admin/PenugasanPage';
 import AsetBidang from './pages/admin/AsetBidang';
+import RekapanPermohonan from './pages/admin/RekapanPermohonan';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -81,6 +82,7 @@ const App: React.FC = () => {
           <Route path="keuangan/:jenis/:kategori" element={<KeuanganPage />} />
           <Route path="penugasan" element={<PenugasanPage />} />
           <Route path="aset" element={<AsetBidang />} />
+          <Route path="rekapan-permohonan" element={<RekapanPermohonan />} />
 
         </Route>
 

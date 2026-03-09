@@ -10,7 +10,10 @@ import {
   X, 
   DownloadCloud, 
   Calendar, 
-  Search 
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Loader2
 } from 'lucide-react'; 
 import ModalKegiatan from './ModalKegiatan';
 import { API_BASE_URL } from '../../config';
@@ -22,6 +25,10 @@ const KegiatanPublik: React.FC = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // State Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const BASE_URL = API_BASE_URL;
 
   // 1. Fungsi Fetch Data
@@ -29,7 +36,6 @@ const KegiatanPublik: React.FC = () => {
     setLoading(true);
     try {
       const res = await axios.get(`${BASE_URL}/api/kegiatan`);
-      // Ambil data dari response
       const resData = res.data.data || res.data;
       setKegiatan(Array.isArray(resData) ? resData : []);
     } catch (err) {
@@ -49,7 +55,7 @@ const KegiatanPublik: React.FC = () => {
     fetchKegiatan();
   }, [fetchKegiatan]);
 
-  // 2. Helper URL Gambar (Mendukung kolom 'gambar' dan 'dokumentasi')
+  // 2. Helper URL Gambar
   const getImageUrl = (path: string) => {
     if (!path) return "https://placehold.co/600x400?text=Tanpa+Gambar";
     if (path.startsWith('http')) return path;
@@ -90,16 +96,24 @@ const KegiatanPublik: React.FC = () => {
     } catch { return dateStr; }
   };
 
+  // ================= LOGIKA PAGINATION =================
+  const totalPages = Math.ceil(kegiatan.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = kegiatan.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
-    <div>
-      <div className="flex-1 p-6 lg:p-10 bg-slate-50 overflow-y-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10 text-left">
+    <div className="flex flex-col h-full bg-slate-50">
+      <main className="flex-1 p-6 lg:p-10 overflow-y-auto">
+        
+        {/* === HEADER === */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 text-left">
           <div>
             <h1 className="text-3xl font-black text-brand-dark uppercase tracking-tight flex items-center gap-3">
               <ImageIcon className="text-brand-primary" size={32} />
               Publikasi Kegiatan
             </h1>
-            <p className="text-slate-500 font-medium text-sm mt-1">Kelola dokumentasi visual untuk beranda.</p>
+            <p className="text-slate-500 font-medium text-sm mt-1">Kelola dokumentasi visual untuk beranda website.</p>
           </div>
           <button 
             onClick={() => { setSelectedData(null); setIsModalOpen(true); }}
@@ -109,26 +123,56 @@ const KegiatanPublik: React.FC = () => {
           </button>
         </div>
 
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+        {/* === FILTER BARS === */}
+        <div className="flex justify-end mb-6">
+          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
+             <span className="text-[10px] font-black text-slate-400 uppercase">Baris:</span>
+             <select 
+                className="bg-transparent border-none outline-none text-xs font-bold text-slate-600 cursor-pointer" 
+                value={itemsPerPage} 
+                onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+             >
+                <option value={10}>10</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+          </div>
+        </div>
+
+        {/* === DATA TABLE === */}
+        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden relative">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] w-56">Waktu</th>
-                  <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Keterangan</th>
-                  <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] w-72 text-center">Preview</th>
+                  <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] w-16 text-center">No</th>
+                  <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] w-56">Waktu Pelaksanaan</th>
+                  <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Judul / Keterangan</th>
+                  <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] w-72 text-center">Preview Foto</th>
                   <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] w-32 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {kegiatan.length > 0 ? (
-                  kegiatan.map((item) => {
-                    // FALLBACK LOGIC: Mengambil dari kolom baru atau kolom lama
+                {loading ? (
+                   <tr>
+                     <td colSpan={5} className="p-20 text-center">
+                        <Loader2 className="animate-spin mx-auto text-brand-primary" size={40} />
+                        <p className="mt-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Memuat Data...</p>
+                     </td>
+                   </tr>
+                ) : currentItems.length > 0 ? (
+                  currentItems.map((item, index) => {
                     const displayKeterangan = item.keterangan || item.nama_kegiatan || "Tanpa Keterangan";
                     const displayGambar = item.gambar || item.dokumentasi;
 
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/30 transition-colors group">
+                      <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                        
+                        {/* Kolom Nomor Urut Dinamis */}
+                        <td className="p-6 align-top text-center font-black text-slate-400 text-sm">
+                          {indexOfFirstItem + index + 1}
+                        </td>
+
                         <td className="p-6 align-top">
                           <div className="flex items-center gap-2 text-brand-dark font-bold text-xs uppercase">
                             <Calendar size={14} className="text-slate-400" />
@@ -141,7 +185,7 @@ const KegiatanPublik: React.FC = () => {
                         <td className="p-6 align-top text-center">
                           <div 
                             onClick={() => setPreviewImage(getImageUrl(displayGambar))}
-                            className="relative inline-block w-full h-32 rounded-2xl overflow-hidden border-2 border-slate-100 cursor-pointer shadow-sm group/img bg-slate-100"
+                            className="relative inline-block w-full h-32 rounded-2xl overflow-hidden border border-slate-100 cursor-pointer shadow-sm group/img bg-slate-100"
                           >
                             <img 
                               src={getImageUrl(displayGambar)} 
@@ -156,28 +200,52 @@ const KegiatanPublik: React.FC = () => {
                         </td>
                         <td className="p-6 align-top">
                           <div className="flex flex-col gap-2">
-                            <button onClick={() => { setSelectedData(item); setIsModalOpen(true); }} className="w-full p-2.5 bg-slate-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex justify-center border border-slate-100"><Edit3 size={18} /></button>
-                            <button onClick={() => handleDelete(item.id)} className="w-full p-2.5 bg-slate-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex justify-center border border-slate-100"><Trash2 size={18} /></button>
+                            <button onClick={() => { setSelectedData(item); setIsModalOpen(true); }} className="w-full p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex justify-center border border-blue-100 shadow-sm"><Edit3 size={18} /></button>
+                            <button onClick={() => handleDelete(item.id)} className="w-full p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex justify-center border border-red-100 shadow-sm"><Trash2 size={18} /></button>
                           </div>
                         </td>
                       </tr>
                     );
                   })
                 ) : (
-                  !loading && (
-                    <tr>
-                      <td colSpan={4} className="py-24 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                         <Search className="mx-auto mb-4 opacity-20" size={48} />
-                         Data tidak ditemukan
-                      </td>
-                    </tr>
-                  )
+                  <tr>
+                    <td colSpan={5} className="py-24 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
+                       <Search className="mx-auto mb-4 opacity-20" size={48} />
+                       Data tidak ditemukan
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
+
+        {/* === PAGINATION === */}
+        {kegiatan.length > 0 && (
+          <div className="mt-6 flex flex-col sm:flex-row justify-between items-center px-4 gap-4">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Halaman {currentPage} dari {totalPages || 1} — Total {kegiatan.length} Publikasi
+              </p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                  disabled={currentPage === 1} 
+                  className="p-3 rounded-xl bg-white border border-slate-200 disabled:opacity-30 shadow-sm hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronLeft size={16}/>
+                </button>
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                  disabled={currentPage === totalPages || totalPages === 0} 
+                  className="p-3 rounded-xl bg-white border border-slate-200 disabled:opacity-30 shadow-sm hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronRight size={16}/>
+                </button>
+              </div>
+          </div>
+        )}
+
+      </main>
 
       <ModalKegiatan 
         isOpen={isModalOpen} 
@@ -187,7 +255,7 @@ const KegiatanPublik: React.FC = () => {
       />
 
       {previewImage && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-dark/95 backdrop-blur-md p-6">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-dark/95 backdrop-blur-md p-6">
           <button onClick={() => setPreviewImage(null)} className="absolute top-8 right-8 text-white/50 hover:text-white bg-white/10 p-3 rounded-full transition-all"><X size={32} /></button>
           <div className="max-w-4xl w-full flex flex-col items-center animate-in zoom-in duration-300">
             <img src={previewImage} className="max-w-full max-h-[75vh] object-contain rounded-3xl shadow-2xl border border-white/10" alt="Preview" />

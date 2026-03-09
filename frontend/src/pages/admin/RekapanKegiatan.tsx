@@ -6,7 +6,6 @@ import {
   Plus, 
   Trash2, 
   Edit3, 
-  FileText, 
   Calendar, 
   Search, 
   Download, 
@@ -14,7 +13,9 @@ import {
   Maximize2, 
   X, 
   DownloadCloud,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import ModalRekapan from './ModalRekapan';
 import { API_BASE_URL } from '../../config';
@@ -30,6 +31,10 @@ const RekapanKegiatan: React.FC = () => {
   const [selectedData, setSelectedData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // State Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // MENGAMBIL KATEGORI DARI URL (Query Params)
   const location = useLocation();
@@ -52,6 +57,11 @@ const RekapanKegiatan: React.FC = () => {
   useEffect(() => { 
     fetchKegiatan(); 
   }, []);
+
+  // Reset halaman ke 1 setiap kali kategori diubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeSubTab]);
 
   // 2. Helper URL Gambar
   const getImageUrl = (path: string) => {
@@ -90,8 +100,13 @@ const RekapanKegiatan: React.FC = () => {
     return dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   };
 
-  // Filter data berdasarkan kategori dari URL
+  // ================= LOGIKA FILTER & PAGINATION =================
   const currentData = kegiatan.filter((k: any) => k.kategori === activeSubTab);
+  
+  const totalPages = Math.ceil(currentData.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = currentData.slice(indexOfFirstItem, indexOfLastItem);
 
   // ================= HELPER PDF =================
   const getBase64ImageFromUrl = async (imageUrl: string) => {
@@ -199,9 +214,10 @@ const RekapanKegiatan: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-slate-50/50 min-h-screen">
-      {/* MAIN CONTENT AREA - Lebar penuh karena sidebar sudah di Layout */}
-      <main className="p-8 lg:p-10 text-left relative">
+    <div className="flex-1 bg-slate-50/50 min-h-screen flex flex-col">
+      <main className="flex-1 p-8 lg:p-10 text-left relative overflow-y-auto">
+        
+        {/* === HEADER === */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-4">
           <div>
             <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-500 px-3 py-1 rounded-full font-bold text-[10px] uppercase tracking-widest mb-3 shadow-sm">
@@ -233,67 +249,118 @@ const RekapanKegiatan: React.FC = () => {
           </div>
         </div>
 
-        {/* DATA TABLE */}
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-200">
-                <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-48">Tanggal</th>
-                <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Uraian / Output</th>
-                <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-64 text-center">Dokumentasi</th>
-                <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-28 text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {loading ? (
-                 <tr>
-                   <td colSpan={4} className="p-20 text-center">
-                      <Loader2 className="animate-spin mx-auto text-brand-primary" size={40} />
-                      <p className="mt-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Memuat Data...</p>
-                   </td>
-                 </tr>
-              ) : currentData.length > 0 ? currentData.map((item: any) => (
-                  <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="p-6 align-top font-bold text-xs text-brand-dark leading-relaxed">
-                      {formatTanggalKalender(item.tanggal)}
-                    </td>
-                    <td className="p-6 align-top text-sm font-medium leading-relaxed text-slate-600">
-                      {item.keterangan || item.nama_kegiatan || "Tanpa Keterangan"}
-                    </td>
-                    <td className="p-6 align-top text-center">
-                      <div 
-                        onClick={() => setPreviewImage(getImageUrl(item.gambar || item.dokumentasi))} 
-                        className="relative overflow-hidden rounded-2xl border border-slate-100 cursor-pointer group/img shadow-sm bg-slate-100 w-full h-32"
-                      >
-                          <img 
-                             src={getImageUrl(item.gambar || item.dokumentasi)} 
-                             className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700" 
-                             alt="Dokumentasi" 
-                             onError={(e) => { e.currentTarget.src = "https://placehold.co/400x300?text=Error+Loading+Image"; }}
-                          />
-                          <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover/img:opacity-100 transition-all flex items-center justify-center backdrop-blur-[2px]">
-                             <Maximize2 className="text-white" size={24} />
-                          </div>
-                      </div>
-                    </td>
-                    <td className="p-6 align-top">
-                       <div className="flex flex-col gap-2">
-                          <button onClick={() => { setSelectedData(item); setIsModalOpen(true); }} className="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex justify-center border border-blue-100 shadow-sm"><Edit3 size={16} /></button>
-                          <button onClick={() => handleDelete(item.id)} className="w-full py-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex justify-center border border-red-100 shadow-sm"><Trash2 size={16} /></button>
-                       </div>
+        {/* === FILTER BARS === */}
+        <div className="flex justify-end mb-6">
+          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
+             <span className="text-[10px] font-black text-slate-400 uppercase">Baris:</span>
+             <select 
+                className="bg-transparent border-none outline-none text-xs font-bold text-slate-600 cursor-pointer" 
+                value={itemsPerPage} 
+                onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+             >
+                <option value={10}>10</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+          </div>
+        </div>
+
+        {/* === DATA TABLE === */}
+        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden relative">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 border-b border-slate-200">
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-16 text-center">No</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-48">Tanggal</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Uraian / Output</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-64 text-center">Dokumentasi</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-28 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {loading ? (
+                   <tr>
+                     <td colSpan={5} className="p-20 text-center">
+                        <Loader2 className="animate-spin mx-auto text-brand-primary" size={40} />
+                        <p className="mt-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Memuat Data...</p>
+                     </td>
+                   </tr>
+                ) : currentItems.length > 0 ? currentItems.map((item: any, index: number) => (
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
+                      
+                      {/* Kolom Nomer Urut */}
+                      <td className="p-6 align-top text-center font-black text-slate-400 text-sm">
+                        {indexOfFirstItem + index + 1}
+                      </td>
+
+                      <td className="p-6 align-top font-bold text-xs text-brand-dark leading-relaxed">
+                        {formatTanggalKalender(item.tanggal)}
+                      </td>
+                      <td className="p-6 align-top text-sm font-medium leading-relaxed text-slate-600">
+                        {item.keterangan || item.nama_kegiatan || "Tanpa Keterangan"}
+                      </td>
+                      <td className="p-6 align-top text-center">
+                        <div 
+                          onClick={() => setPreviewImage(getImageUrl(item.gambar || item.dokumentasi))} 
+                          className="relative overflow-hidden rounded-2xl border border-slate-100 cursor-pointer group/img shadow-sm bg-slate-100 w-full h-32"
+                        >
+                            <img 
+                               src={getImageUrl(item.gambar || item.dokumentasi)} 
+                               className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700" 
+                               alt="Dokumentasi" 
+                               onError={(e) => { e.currentTarget.src = "https://placehold.co/400x300?text=Error+Loading+Image"; }}
+                            />
+                            <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover/img:opacity-100 transition-all flex items-center justify-center backdrop-blur-[2px]">
+                               <Maximize2 className="text-white" size={24} />
+                            </div>
+                        </div>
+                      </td>
+                      <td className="p-6 align-top">
+                         <div className="flex flex-col gap-2">
+                            <button onClick={() => { setSelectedData(item); setIsModalOpen(true); }} className="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex justify-center border border-blue-100 shadow-sm"><Edit3 size={16} /></button>
+                            <button onClick={() => handleDelete(item.id)} className="w-full py-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex justify-center border border-red-100 shadow-sm"><Trash2 size={16} /></button>
+                         </div>
+                      </td>
+                    </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="py-24 text-center">
+                       <Search className="mx-auto mb-4 text-slate-200" size={56} />
+                       <p className="text-sm font-black text-slate-300 uppercase tracking-[0.2em]">Belum Ada Data di Kategori Ini</p>
                     </td>
                   </tr>
-              )) : (
-                <tr>
-                  <td colSpan={4} className="py-24 text-center">
-                     <Search className="mx-auto mb-4 text-slate-200" size={56} />
-                     <p className="text-sm font-black text-slate-300 uppercase tracking-[0.2em]">Belum Ada Data di Kategori Ini</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        {/* === PAGINATION === */}
+        {currentData.length > 0 && (
+          <div className="mt-6 flex flex-col sm:flex-row justify-between items-center px-4 gap-4">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Halaman {currentPage} dari {totalPages || 1} — Total {currentData.length} Rekapan
+              </p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                  disabled={currentPage === 1} 
+                  className="p-3 rounded-xl bg-white border border-slate-200 disabled:opacity-30 shadow-sm hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronLeft size={16}/>
+                </button>
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                  disabled={currentPage === totalPages || totalPages === 0} 
+                  className="p-3 rounded-xl bg-white border border-slate-200 disabled:opacity-30 shadow-sm hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronRight size={16}/>
+                </button>
+              </div>
+          </div>
+        )}
+
       </main>
 
       {/* MODAL REKAPAN */}

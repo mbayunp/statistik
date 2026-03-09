@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const keuanganController = require('../controllers/keuanganController');
+const suratController = require('../controllers/suratController');
 const upload = require('../middleware/upload'); 
 
-router.get('/', keuanganController.getLaporan);
-router.post('/', upload.single('file_laporan'), keuanganController.createLaporan);
-router.delete('/:id', keuanganController.deleteLaporan);
+router.get('/:type', suratController.getSuratByType);
+router.post('/', upload.single('file_surat'), suratController.createSurat);
+router.delete('/:id', suratController.deleteSurat);
 
 module.exports = router;

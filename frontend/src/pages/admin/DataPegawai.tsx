@@ -9,13 +9,11 @@ const DataPegawai: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // State untuk Modal
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ nip: '', nama: '', jabatan: '', golongan: '' });
 
-  // State untuk Drag and Drop
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const fetchPegawai = async () => {
@@ -77,27 +75,21 @@ const DataPegawai: React.FC = () => {
     });
   };
 
-  // === FUNGSI DRAG AND DROP TERBARU ===
-  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+  // === FUNGSI DRAG AND DROP REVISI ===
+  const handleDragStart = (index: number) => {
     setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>) => {
-    e.preventDefault(); // Wajib di-prevent agar onDrop bisa tereksekusi
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = async (e: React.DragEvent<HTMLTableRowElement>, dropIndex: number) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    
-    // Jika tidak ada yang dipindahkan, hentikan
+  };
+
+  const handleDrop = async (dropIndex: number) => {
     if (draggedIndex === null || draggedIndex === dropIndex) {
       setDraggedIndex(null);
       return;
     }
 
-    // 1. Ubah urutan secara visual terlebih dahulu
     const newPegawai = [...pegawai];
     const draggedItem = newPegawai[draggedIndex];
     newPegawai.splice(draggedIndex, 1);
@@ -106,14 +98,13 @@ const DataPegawai: React.FC = () => {
     setPegawai(newPegawai);
     setDraggedIndex(null);
 
-    // 2. Simpan urutan terbaru ke database
     try {
       const reorderedData = newPegawai.map((p, index) => ({ id: p.id, urutan: index + 1 }));
       await axios.put(`${API_BASE_URL}/api/pegawai/reorder`, { data: reorderedData });
     } catch (error) {
-      console.error('Gagal menyimpan urutan baru ke database', error);
+      console.error('Gagal menyimpan urutan', error);
       Swal.fire('Gagal', 'Urutan gagal disimpan ke server', 'error');
-      fetchPegawai(); // Kembalikan ke urutan semula jika API gagal
+      fetchPegawai();
     }
   };
 
@@ -141,7 +132,6 @@ const DataPegawai: React.FC = () => {
           </button>
         </div>
 
-        {/* Search Bar */}
         <div className="bg-white p-4 rounded-2xl mb-6 shadow-sm border border-slate-200 flex items-center gap-3">
           <div className="bg-slate-100 p-2 rounded-xl text-slate-400">
             <Search size={20} />
@@ -155,12 +145,11 @@ const DataPegawai: React.FC = () => {
           />
         </div>
 
-        {/* Table */}
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <th className="p-6 w-12 text-center">Urutan</th>
+                <th className="p-6 w-12 text-center">Handle</th>
                 <th className="p-6">NIP</th>
                 <th className="p-6">Nama Pegawai</th>
                 <th className="p-6">Jabatan</th>
@@ -170,22 +159,30 @@ const DataPegawai: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading ? (
-                 <tr><td colSpan={6} className="p-10 text-center font-bold text-slate-400 animate-pulse">Memuat...</td></tr>
+                 <tr><td colSpan={6} className="p-10 text-center font-bold text-slate-400">Memuat...</td></tr>
               ) : filteredPegawai.map((p, index) => (
                 <tr 
                   key={p.id} 
-                  draggable={searchTerm === ''}
-                  onDragStart={(e) => handleDragStart(e, index)}
                   onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, index)}
-                  className={`hover:bg-slate-50/80 transition-colors group ${searchTerm === '' ? 'cursor-grab active:cursor-grabbing' : ''} ${draggedIndex === index ? 'opacity-40 bg-slate-100' : ''}`}
+                  onDrop={() => handleDrop(index)}
+                  className={`hover:bg-slate-50/80 transition-colors group ${draggedIndex === index ? 'opacity-40 bg-slate-100' : ''}`}
                 >
-                  <td className="p-6 text-center text-slate-300 group-hover:text-brand-primary">
-                    <GripVertical size={20} className="mx-auto" />
+                  {/* KOLOM HANDLE: Hanya area ini yang bisa nge-drag baris */}
+                  <td className="p-6 text-center text-slate-300">
+                    <div
+                      draggable={searchTerm === ''}
+                      onDragStart={() => handleDragStart(index)}
+                      className={`cursor-grab active:cursor-grabbing p-2 rounded-lg hover:bg-slate-100 hover:text-brand-primary inline-flex items-center justify-center transition-all ${searchTerm !== '' ? 'opacity-20 cursor-not-allowed' : ''}`}
+                      title={searchTerm !== '' ? "Matikan pencarian untuk mengatur urutan" : "Tarik untuk mengatur urutan"}
+                    >
+                      <GripVertical size={20} />
+                    </div>
                   </td>
-                  <td className="p-6 font-mono text-xs text-slate-500 font-bold">{p.nip || '-'}</td>
-                  <td className="p-6 font-bold text-slate-800 text-sm">{p.nama}</td>
-                  <td className="p-6 text-sm font-medium text-slate-600">{p.jabatan || '-'}</td>
+
+                  {/* KOLOM DATA: Tetap bisa di-copy */}
+                  <td className="p-6 font-mono text-xs text-slate-500 font-bold select-text">{p.nip || '-'}</td>
+                  <td className="p-6 font-bold text-slate-800 text-sm select-text">{p.nama}</td>
+                  <td className="p-6 text-sm font-medium text-slate-600 select-text">{p.jabatan || '-'}</td>
                   <td className="p-6 text-center"><span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider">{p.golongan || '-'}</span></td>
                   <td className="p-6">
                     <div className="flex justify-center gap-2">
@@ -200,7 +197,7 @@ const DataPegawai: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL FORM */}
+      {/* MODAL FORM TETAP SAMA */}
       {showModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl animate-in zoom-in duration-300 overflow-hidden my-auto">

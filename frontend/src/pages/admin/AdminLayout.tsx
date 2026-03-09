@@ -15,7 +15,8 @@ import {
   Mail,
   Send,
   Monitor,
-  CheckCircle2
+  CheckCircle2,
+  Database
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import logo from '../../assets/images/logo.png';
@@ -45,6 +46,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: 'Berkas Arsip', path: '/admin/berkas-arsip', icon: <Archive size={20} /> },
     { name: 'Kepala Bidang', path: '/admin/penugasan', icon: <ClipboardList size={20} /> },
     { name: 'Aset Bidang', path: '/admin/aset', icon: <Monitor size={20} /> },
+    { name: 'Rekapan Permohonan', path: '/admin/rekapan-permohonan', icon: <Database size={20} /> },
   ];
 
   const handleLogout = () => {
@@ -63,7 +65,6 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     });
   };
 
-  // Helper untuk mengecek apakah sub-menu rekapan sedang aktif
   const isActiveRekapan = (cat: string) => {
     const params = new URLSearchParams(location.search);
     return location.pathname === '/admin/rekapan' && params.get('kategori') === cat;
