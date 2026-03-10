@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // 1. Tambahkan import useNavigate
 import { 
   Users, 
   Mail, 
@@ -19,6 +20,8 @@ import {
 import { API_BASE_URL } from '../../config';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate(); // 2. Inisialisasi navigate
+
   const [stats, setStats] = useState({
     publikasi: 0,
     suratMasuk: 0,
@@ -29,7 +32,7 @@ const Dashboard: React.FC = () => {
     keuangan: 0,
     penugasan: 0,
     aset: 0,
-    rekapanPermohonan: 0 // State baru untuk Rekapan Permohonan
+    rekapanPermohonan: 0 
   });
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -75,7 +78,6 @@ const Dashboard: React.FC = () => {
         })
       );
 
-      // Ubah hasil array menjadi format object
       const counts = internalResults.reduce((acc, item) => {
         acc[item.key] = item.count;
         return acc;
@@ -102,9 +104,7 @@ const Dashboard: React.FC = () => {
         berkas: counts.berkas || 0,
         penugasan: counts.penugasan || 0,
         aset: counts.aset || 0,
-        
         keuangan: (counts.keuangan_anggaran || 0) + (counts.keuangan_modal || 0) + (counts.keuangan_pegawai || 0),
-        
         rekapanPermohonan: totalPermohonan
       });
 
@@ -120,18 +120,18 @@ const Dashboard: React.FC = () => {
     fetchDashboardData();
   }, []);
 
-  // Konfigurasi visual untuk setiap kartu statistik
+  // 3. Tambahkan properti 'path' untuk tujuan URL saat kartu diklik
   const statCards = [
-    { label: 'Publikasi Kegiatan', value: stats.publikasi, icon: <Activity size={24} />, color: 'bg-blue-50', textColor: 'text-blue-600' },
-    { label: 'Surat Masuk', value: stats.suratMasuk, icon: <Mail size={24} />, color: 'bg-emerald-50', textColor: 'text-emerald-600' },
-    { label: 'Surat Keluar', value: stats.suratKeluar, icon: <Send size={24} />, color: 'bg-orange-50', textColor: 'text-orange-600' },
-    { label: 'Rekapan Internal', value: stats.rekapan, icon: <ClipboardCheck size={24} />, color: 'bg-amber-50', textColor: 'text-amber-600' },
-    { label: 'Data Pegawai', value: stats.pegawai, icon: <Users size={24} />, color: 'bg-indigo-50', textColor: 'text-indigo-600' },
-    { label: 'Berkas Arsip', value: stats.berkas, icon: <Archive size={24} />, color: 'bg-rose-50', textColor: 'text-rose-600' },
-    { label: 'Lap. Keuangan', value: stats.keuangan, icon: <Wallet size={24} />, color: 'bg-teal-50', textColor: 'text-teal-600' },
-    { label: 'Form Penugasan', value: stats.penugasan, icon: <Briefcase size={24} />, color: 'bg-purple-50', textColor: 'text-purple-600' },
-    { label: 'Aset Bidang', value: stats.aset, icon: <Monitor size={24} />, color: 'bg-cyan-50', textColor: 'text-cyan-600' },
-    { label: 'Rekap Permohonan', value: stats.rekapanPermohonan, icon: <Database size={24} />, color: 'bg-fuchsia-50', textColor: 'text-fuchsia-600' },
+    { label: 'Publikasi Kegiatan', value: stats.publikasi, icon: <Activity size={24} />, color: 'bg-blue-50', textColor: 'text-blue-600', path: '/admin/kegiatan' },
+    { label: 'Surat Masuk', value: stats.suratMasuk, icon: <Mail size={24} />, color: 'bg-emerald-50', textColor: 'text-emerald-600', path: '/admin/surat/masuk' },
+    { label: 'Surat Keluar', value: stats.suratKeluar, icon: <Send size={24} />, color: 'bg-orange-50', textColor: 'text-orange-600', path: '/admin/surat/keluar' },
+    { label: 'Rekapan Internal', value: stats.rekapan, icon: <ClipboardCheck size={24} />, color: 'bg-amber-50', textColor: 'text-amber-600', path: '/admin/rekapan' },
+    { label: 'Data Pegawai', value: stats.pegawai, icon: <Users size={24} />, color: 'bg-indigo-50', textColor: 'text-indigo-600', path: '/admin/pegawai' },
+    { label: 'Berkas Arsip', value: stats.berkas, icon: <Archive size={24} />, color: 'bg-rose-50', textColor: 'text-rose-600', path: '/admin/berkas-arsip' },
+    { label: 'Lap. Keuangan', value: stats.keuangan, icon: <Wallet size={24} />, color: 'bg-teal-50', textColor: 'text-teal-600', path: '/admin/keuangan/anggaran' },
+    { label: 'Form Penugasan', value: stats.penugasan, icon: <Briefcase size={24} />, color: 'bg-purple-50', textColor: 'text-purple-600', path: '/admin/penugasan' },
+    { label: 'Aset Bidang', value: stats.aset, icon: <Monitor size={24} />, color: 'bg-cyan-50', textColor: 'text-cyan-600', path: '/admin/aset' },
+    { label: 'Rekap Permohonan', value: stats.rekapanPermohonan, icon: <Database size={24} />, color: 'bg-fuchsia-50', textColor: 'text-fuchsia-600', path: '/admin/rekapan-permohonan' },
   ];
 
   return (
@@ -152,9 +152,7 @@ const Dashboard: React.FC = () => {
             </h1>
           </div>
           
-          {/* Kelompok Info & Tombol Kanan */}
           <div className="flex items-center gap-4">
-            {/* Waktu Server */}
             <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-200 w-fit">
               <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
                 <Clock size={20} />
@@ -167,7 +165,6 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Tombol Refresh */}
             <button 
               onClick={fetchDashboardData} 
               disabled={isRefreshing}
@@ -182,13 +179,17 @@ const Dashboard: React.FC = () => {
         {/* === STATS GRID SECTION === */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
           {statCards.map((card, index) => (
-            <div key={index} className="bg-white p-1 rounded-[2.5rem] shadow-sm border border-slate-200 group hover:shadow-xl hover:shadow-brand-primary/5 transition-all duration-300">
+            <div 
+              key={index} 
+              onClick={() => navigate(card.path)} // 4. Eksekusi navigasi saat diklik
+              className="bg-white p-1 rounded-[2.5rem] shadow-sm border border-slate-200 group hover:shadow-xl hover:shadow-brand-primary/5 transition-all duration-300 cursor-pointer" // 5. Tambahkan cursor-pointer
+            >
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div className={`w-14 h-14 rounded-2xl ${card.color} ${card.textColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-500`}>
                     {card.icon}
                   </div>
-                  <div className="p-2 rounded-lg bg-slate-50 text-slate-300 group-hover:text-brand-primary transition-colors">
+                  <div className="p-2 rounded-lg bg-slate-50 text-slate-300 group-hover:text-brand-primary group-hover:bg-brand-primary/10 transition-colors">
                     <ArrowUpRight size={20} />
                   </div>
                 </div>
