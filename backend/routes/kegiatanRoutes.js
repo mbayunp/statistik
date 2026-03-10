@@ -15,6 +15,7 @@ const upload = multer({ storage: storage });
 
 router.get('/', kegiatanController.getAllKegiatan); 
 router.post('/', upload.single('gambar'), kegiatanController.create);
+router.put('/:id', upload.single('gambar'), kegiatanController.update);
 router.delete('/:id', kegiatanController.delete);
 
 module.exports = router;
