@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { X, Calendar, FileText, Tag, UploadCloud, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom'; // Tambahkan ini
+import { X, Calendar, FileText, Tag, UploadCloud, Loader2, AlignLeft } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { API_BASE_URL } from '../../config';
 
@@ -7,60 +8,96 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRefresh: () => void;
+  data?: any; 
 }
 
-const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh }) => {
+const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  
+  // MENGAMBIL KATEGORI AKTIF DARI URL SEBAGAI DEFAULT
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const activeSubTab = queryParams.get('kategori') || 'PENGELOLAAN PORTAL';
+
   const [formData, setFormData] = useState({
     tanggal: '',
     nama_kegiatan: '',
+    keterangan: '',
     tipe: 'bulanan',
-    kategori: 'PENGELOLAAN PORTAL',
+    kategori: activeSubTab, // Set default kategori sesuai halaman saat ini
     dokumentasi: null as File | null
   });
+
+  // MENGISI FORM OTOMATIS SAAT MODAL DIBUKA
+  useEffect(() => {
+    if (data && isOpen) {
+      // MODE EDIT: Isi sesuai data yang diklik
+      const formattedDate = data.tanggal ? data.tanggal.split('T')[0] : '';
+      
+      setFormData({
+        tanggal: formattedDate,
+        nama_kegiatan: data.nama_kegiatan || '',
+        keterangan: data.keterangan || '',
+        tipe: data.tipe || 'bulanan',
+        kategori: data.kategori || activeSubTab, 
+        dokumentasi: null 
+      });
+      setFileName(data.dokumentasi || data.gambar ? "Gambar sudah ada (Abaikan jika tidak ingin mengubah)" : null);
+    
+    } else if (isOpen && !data) {
+      // MODE TAMBAH: Reset form TAPI pertahankan kategori sesuai URL saat ini
+      setFormData({
+        tanggal: '', 
+        nama_kegiatan: '', 
+        keterangan: '', 
+        tipe: 'bulanan', 
+        kategori: activeSubTab, // Penting! Agar kategori tidak mereset ke default awal
+        dokumentasi: null
+      });
+      setFileName(null);
+    }
+  }, [data, isOpen, activeSubTab]); // activeSubTab dimasukkan ke dependency array
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.dokumentasi) {
+    if (!formData.dokumentasi && !data) {
       Swal.fire('Peringatan', 'Dokumentasi (gambar) wajib diunggah!', 'warning');
       return;
     }
 
     setIsLoading(true);
-    const data = new FormData();
-    data.append('tanggal', formData.tanggal);
-    data.append('nama_kegiatan', formData.nama_kegiatan);
-    data.append('tipe', formData.tipe);
-    data.append('kategori', formData.kategori);
-    data.append('dokumentasi', formData.dokumentasi);
+    const formPayload = new FormData();
+    formPayload.append('tanggal', formData.tanggal);
+    formPayload.append('nama_kegiatan', formData.nama_kegiatan);
+    formPayload.append('keterangan', formData.keterangan); 
+    formPayload.append('tipe', formData.tipe);
+    formPayload.append('kategori', formData.kategori);
+    
+    if (formData.dokumentasi) {
+      formPayload.append('dokumentasi', formData.dokumentasi);
+    }
+
+    const url = data ? `${API_BASE_URL}/api/rekapan/${data.id}` : `${API_BASE_URL}/api/rekapan`;
+    const method = data ? 'PUT' : 'POST';
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/rekapan`, {
-        method: 'POST',
-        body: data,
-        headers: { 
-        }
+      const response = await fetch(url, {
+        method: method,
+        body: formPayload,
       });
 
       if (response.ok) {
         Swal.fire({
           icon: 'success',
           title: 'Berhasil',
-          text: 'Data kegiatan berhasil ditambahkan!',
+          text: data ? 'Data kegiatan berhasil diperbarui!' : 'Data kegiatan berhasil ditambahkan!',
           timer: 1500,
           showConfirmButton: false
         });
-        
-        // Reset form setelah sukses
-        setFormData({
-          tanggal: '', nama_kegiatan: '', tipe: 'bulanan', 
-          kategori: 'PENGELOLAAN PORTAL', dokumentasi: null
-        });
-        setFileName(null);
         
         onRefresh();
         onClose();
@@ -78,16 +115,15 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh }) => 
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-0">
-      {/* Backdrop blur */}
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
       
-      {/* Modal Content */}
       <div className="bg-white w-full max-w-xl rounded-[2rem] shadow-2xl relative z-10 transform transition-all flex flex-col max-h-[90vh]">
         
-        {/* Header */}
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-[2rem]">
           <div>
-            <h3 className="text-xl font-black text-brand-dark tracking-tight">Tambah Kegiatan</h3>
+            <h3 className="text-xl font-black text-brand-dark tracking-tight">
+              {data ? 'Edit Kegiatan' : 'Tambah Kegiatan'}
+            </h3>
             <p className="text-xs text-slate-400 font-medium mt-1">Isi formulir di bawah ini dengan lengkap</p>
           </div>
           <button 
@@ -98,11 +134,9 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh }) => 
           </button>
         </div>
 
-        {/* Form Body (Scrollable) */}
         <div className="overflow-y-auto p-6 custom-scrollbar">
           <form id="formKegiatan" onSubmit={handleSubmit} className="space-y-5">
             
-            {/* Input Tanggal */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Tanggal Kegiatan</label>
               <div className="relative group">
@@ -111,26 +145,40 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh }) => 
                   type="date" 
                   className="w-full p-3.5 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary transition-all text-slate-600 font-medium" 
                   onChange={(e) => setFormData({...formData, tanggal: e.target.value})} 
+                  value={formData.tanggal}
                   required 
                 />
               </div>
             </div>
 
-            {/* Input Nama Kegiatan */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Uraian / Nama Kegiatan</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Uraian / Judul Kegiatan</label>
               <div className="relative group">
-                <FileText className="absolute left-4 top-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" size={20} />
-                <textarea 
-                  placeholder="Deskripsikan kegiatan yang dilakukan..." 
-                  className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary transition-all text-slate-600 font-medium h-28 resize-none"
+                <FileText className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-brand-primary transition-colors" size={20} />
+                <input 
+                  type="text"
+                  placeholder="Contoh: Rapat Koordinasi..." 
+                  className="w-full p-3.5 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary transition-all text-slate-600 font-medium"
                   onChange={(e) => setFormData({...formData, nama_kegiatan: e.target.value})} 
+                  value={formData.nama_kegiatan}
                   required 
                 />
               </div>
             </div>
 
-            {/* Input Kategori */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Deskripsi Lengkap</label>
+              <div className="relative group">
+                <AlignLeft className="absolute left-4 top-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" size={20} />
+                <textarea 
+                  placeholder="Jelaskan detail kegiatan, output, atau catatan penting..." 
+                  className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary transition-all text-slate-600 font-medium h-28 resize-none"
+                  onChange={(e) => setFormData({...formData, keterangan: e.target.value})} 
+                  value={formData.keterangan}
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Kategori Sektoral</label>
               <div className="relative group">
@@ -152,20 +200,23 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh }) => 
               </div>
             </div>
 
-            {/* Input File (Modern UI) */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Unggah Dokumentasi (Gambar)</label>
               <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-300 bg-slate-50 rounded-2xl cursor-pointer hover:bg-brand-primary/5 hover:border-brand-primary transition-all group">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
                   <div className="w-12 h-12 mb-3 bg-white rounded-full shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                     <UploadCloud className="text-brand-primary" size={24} />
                   </div>
-                  <p className="mb-1 text-sm text-slate-500 font-medium">
-                    <span className="font-bold text-brand-primary">Klik untuk unggah</span> atau seret gambar ke sini
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {fileName ? <span className="font-bold text-brand-dark">{fileName}</span> : "PNG, JPG atau JPEG (Maks. 5MB)"}
-                  </p>
+                  {fileName ? (
+                    <p className="text-xs text-brand-primary font-bold line-clamp-2">{fileName}</p>
+                  ) : (
+                    <>
+                      <p className="mb-1 text-sm text-slate-500 font-medium">
+                        <span className="font-bold text-brand-primary">Klik untuk unggah</span> atau seret gambar ke sini
+                      </p>
+                      <p className="text-xs text-slate-400">PNG, JPG atau JPEG (Maks. 5MB)</p>
+                    </>
+                  )}
                 </div>
                 <input 
                   type="file" 
@@ -183,7 +234,6 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh }) => 
           </form>
         </div>
 
-        {/* Footer (Action Buttons) */}
         <div className="p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-[2rem]">
           <button 
             type="submit" 
@@ -194,7 +244,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh }) => 
             {isLoading ? (
               <><Loader2 className="animate-spin" size={20} /> MENYIMPAN DATA...</>
             ) : (
-              'SIMPAN REKAPAN'
+              data ? 'SIMPAN PERUBAHAN' : 'SIMPAN REKAPAN'
             )}
           </button>
         </div>

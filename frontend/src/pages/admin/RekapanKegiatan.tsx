@@ -15,12 +15,13 @@ import {
   DownloadCloud,
   Loader2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowUpDown,
+  Filter // Tambahan icon filter
 } from 'lucide-react';
 import ModalRekapan from './ModalRekapan';
 import { API_BASE_URL } from '../../config';
 
-// Import Library Export
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable'; 
@@ -32,16 +33,15 @@ const RekapanKegiatan: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // State Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [sortOrder, setSortOrder] = useState<'terbaru' | 'terlama'>('terbaru');
+  const [selectedMonth, setSelectedMonth] = useState<string>('semua'); // STATE BARU UNTUK FILTER BULAN
 
-  // MENGAMBIL KATEGORI DARI URL (Query Params)
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const activeSubTab = queryParams.get('kategori') || 'PENGELOLAAN PORTAL';
 
-  // 1. Fetch Data dari Backend
   const fetchKegiatan = async () => {
     try {
       setLoading(true);
@@ -58,12 +58,10 @@ const RekapanKegiatan: React.FC = () => {
     fetchKegiatan(); 
   }, []);
 
-  // Reset halaman ke 1 setiap kali kategori diubah
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeSubTab]);
+  }, [activeSubTab, selectedMonth]);
 
-  // 2. Helper URL Gambar
   const getImageUrl = (path: string) => {
     if (!path) return "https://placehold.co/600x400?text=Tanpa+Gambar";
     if (path.startsWith('http')) return path;
@@ -71,7 +69,6 @@ const RekapanKegiatan: React.FC = () => {
     return `${API_BASE_URL}${cleanPath}`;
   };
 
-  // 3. Logika Hapus Data
   const handleDelete = (id: number) => {
     Swal.fire({
       title: 'Hapus Rekapan?',
@@ -100,15 +97,37 @@ const RekapanKegiatan: React.FC = () => {
     return dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   };
 
-  // ================= LOGIKA FILTER & PAGINATION =================
-  const currentData = kegiatan.filter((k: any) => k.kategori === activeSubTab);
   
+  let currentData = kegiatan.filter((k: any) => k.kategori === activeSubTab);
+
+  if (selectedMonth !== 'semua') {
+    currentData = currentData.filter((item: any) => {
+      if (!item.tanggal) return false;
+      const dateObj = new Date(item.tanggal);
+      if (isNaN(dateObj.getTime())) return false;
+      // getMonth() mengembalikan nilai 0 (Januari) sampai 11 (Desember)
+      return dateObj.getMonth().toString() === selectedMonth;
+    });
+  }
+
+  // 3. Sorting
+  currentData = currentData.sort((a, b) => {
+    const timeA = a.tanggal ? new Date(a.tanggal).getTime() : 0;
+    const timeB = b.tanggal ? new Date(b.tanggal).getTime() : 0;
+    
+    if (sortOrder === 'terbaru') {
+      return timeB - timeA; 
+    } else {
+      return timeA - timeB; 
+    }
+  });
+
+  // 4. Pagination
   const totalPages = Math.ceil(currentData.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = currentData.slice(indexOfFirstItem, indexOfLastItem);
 
-  // ================= HELPER PDF =================
   const getBase64ImageFromUrl = async (imageUrl: string) => {
     try {
       const response = await axios.get(imageUrl, { responseType: 'blob' });
@@ -123,13 +142,13 @@ const RekapanKegiatan: React.FC = () => {
     }
   };
 
-  // ================= EXPORT LOGIC =================
   const exportExcel = () => {
     if (currentData.length === 0) return Swal.fire('Kosong', 'Tidak ada data', 'info');
     const dataToExport = currentData.map((item, index) => ({
       'No': index + 1,
       'Tanggal Pelaksanaan': formatTanggalKalender(item.tanggal),
-      'Uraian Kegiatan': item.keterangan || item.nama_kegiatan || "Tanpa Keterangan",
+      'Uraian / Judul': item.nama_kegiatan || "Tanpa Judul",
+      'Deskripsi': item.keterangan || "-",
       'Link Dokumentasi': getImageUrl(item.gambar || item.dokumentasi)
     }));
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -164,29 +183,31 @@ const RekapanKegiatan: React.FC = () => {
       tableData.push([
         i + 1, 
         formatTanggalKalender(item.tanggal), 
-        item.keterangan || item.nama_kegiatan || "Tanpa Keterangan",
+        item.nama_kegiatan || "Tanpa Judul",
+        item.keterangan || "-",
         '' 
       ]);
     }
 
     autoTable(doc, { 
       startY: 32, 
-      head: [['No', 'Tanggal', 'Uraian', 'Dokumentasi']], 
+      head: [['No', 'Tanggal', 'Judul / Uraian', 'Deskripsi', 'Dokumentasi']], 
       body: tableData,
       headStyles: { fillColor: [0, 150, 136], halign: 'center' },
       columnStyles: {
         0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 95 },
-        3: { cellWidth: 40 }
+        1: { cellWidth: 30 },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 60 },
+        4: { cellWidth: 40 }
       },
       didParseCell: (data) => {
-        if (data.section === 'body' && data.column.index === 3) {
+        if (data.section === 'body' && data.column.index === 4) {
             data.cell.styles.minCellHeight = 30; 
         }
       },
       didDrawCell: (data) => {
-        if (data.section === 'body' && data.column.index === 3) {
+        if (data.section === 'body' && data.column.index === 4) {
            const base64Img = base64Images[data.row.index];
            if (base64Img && base64Img.startsWith('data:image')) {
               doc.addImage(base64Img, 'JPEG', data.cell.x + 2, data.cell.y + 2, 36, 26);
@@ -217,7 +238,6 @@ const RekapanKegiatan: React.FC = () => {
     <div className="flex-1 bg-slate-50/50 min-h-screen flex flex-col">
       <main className="flex-1 p-8 lg:p-10 text-left relative overflow-y-auto">
         
-        {/* === HEADER === */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-4">
           <div>
             <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-500 px-3 py-1 rounded-full font-bold text-[10px] uppercase tracking-widest mb-3 shadow-sm">
@@ -228,7 +248,6 @@ const RekapanKegiatan: React.FC = () => {
             </h1>
           </div>
           
-          {/* EXPORT BUTTONS */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200">
               <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 hover:text-red-600 rounded-xl text-xs font-bold text-slate-500 transition-colors">
@@ -249,8 +268,49 @@ const RekapanKegiatan: React.FC = () => {
           </div>
         </div>
 
-        {/* === FILTER BARS === */}
-        <div className="flex justify-end mb-6">
+        {/* === FILTER BARS (BULAN, URUTAN & LIMIT BARIS) === */}
+        <div className="flex flex-wrap justify-end mb-6 gap-3">
+          
+          {/* Filter Bulan Baru */}
+          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
+             <Filter size={14} className="text-slate-400" />
+             <span className="text-[10px] font-black text-slate-400 uppercase">Bulan:</span>
+             <select 
+                className="bg-transparent border-none outline-none text-xs font-bold text-slate-600 cursor-pointer" 
+                value={selectedMonth} 
+                onChange={(e) => { setSelectedMonth(e.target.value); setCurrentPage(1); }}
+             >
+                <option value="semua">Semua Bulan</option>
+                <option value="0">Januari</option>
+                <option value="1">Februari</option>
+                <option value="2">Maret</option>
+                <option value="3">April</option>
+                <option value="4">Mei</option>
+                <option value="5">Juni</option>
+                <option value="6">Juli</option>
+                <option value="7">Agustus</option>
+                <option value="8">September</option>
+                <option value="9">Oktober</option>
+                <option value="10">November</option>
+                <option value="11">Desember</option>
+              </select>
+          </div>
+
+          {/* Filter Urutan */}
+          <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
+             <ArrowUpDown size={14} className="text-slate-400" />
+             <span className="text-[10px] font-black text-slate-400 uppercase">Urutkan:</span>
+             <select 
+                className="bg-transparent border-none outline-none text-xs font-bold text-slate-600 cursor-pointer" 
+                value={sortOrder} 
+                onChange={(e) => { setSortOrder(e.target.value as 'terbaru' | 'terlama'); setCurrentPage(1); }}
+             >
+                <option value="terbaru">Tgl Pelaksanaan (Terbaru)</option>
+                <option value="terlama">Tgl Pelaksanaan (Terlama)</option>
+              </select>
+          </div>
+
+          {/* Limit Baris */}
           <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
              <span className="text-[10px] font-black text-slate-400 uppercase">Baris:</span>
              <select 
@@ -271,17 +331,18 @@ const RekapanKegiatan: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-200">
-                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-16 text-center">No</th>
-                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-48">Tanggal</th>
-                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest">Uraian / Output</th>
-                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-64 text-center">Dokumentasi</th>
-                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-28 text-center">Aksi</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-12 text-center">No</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-36">Tanggal</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-[25%]">Uraian / Judul</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-[30%]">Deskripsi</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-48 text-center">Dokumentasi</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-24 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {loading ? (
                    <tr>
-                     <td colSpan={5} className="p-20 text-center">
+                     <td colSpan={6} className="p-20 text-center">
                         <Loader2 className="animate-spin mx-auto text-brand-primary" size={40} />
                         <p className="mt-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Memuat Data...</p>
                      </td>
@@ -289,7 +350,6 @@ const RekapanKegiatan: React.FC = () => {
                 ) : currentItems.length > 0 ? currentItems.map((item: any, index: number) => (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
                       
-                      {/* Kolom Nomer Urut */}
                       <td className="p-6 align-top text-center font-black text-slate-400 text-sm">
                         {indexOfFirstItem + index + 1}
                       </td>
@@ -297,13 +357,19 @@ const RekapanKegiatan: React.FC = () => {
                       <td className="p-6 align-top font-bold text-xs text-brand-dark leading-relaxed">
                         {formatTanggalKalender(item.tanggal)}
                       </td>
-                      <td className="p-6 align-top text-sm font-medium leading-relaxed text-slate-600">
-                        {item.keterangan || item.nama_kegiatan || "Tanpa Keterangan"}
+                      
+                      <td className="p-6 align-top text-sm font-bold leading-relaxed text-slate-800">
+                        {item.nama_kegiatan || "Tanpa Judul"}
                       </td>
+
+                      <td className="p-6 align-top text-xs font-medium leading-relaxed text-slate-500 whitespace-pre-line">
+                        {item.keterangan || <span className="italic opacity-50">Tanpa Deskripsi</span>}
+                      </td>
+
                       <td className="p-6 align-top text-center">
                         <div 
                           onClick={() => setPreviewImage(getImageUrl(item.gambar || item.dokumentasi))} 
-                          className="relative overflow-hidden rounded-2xl border border-slate-100 cursor-pointer group/img shadow-sm bg-slate-100 w-full h-32"
+                          className="relative overflow-hidden rounded-2xl border border-slate-100 cursor-pointer group/img shadow-sm bg-slate-100 w-full h-24"
                         >
                             <img 
                                src={getImageUrl(item.gambar || item.dokumentasi)} 
@@ -316,18 +382,19 @@ const RekapanKegiatan: React.FC = () => {
                             </div>
                         </div>
                       </td>
+                      
                       <td className="p-6 align-top">
                          <div className="flex flex-col gap-2">
-                            <button onClick={() => { setSelectedData(item); setIsModalOpen(true); }} className="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex justify-center border border-blue-100 shadow-sm"><Edit3 size={16} /></button>
-                            <button onClick={() => handleDelete(item.id)} className="w-full py-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex justify-center border border-red-100 shadow-sm"><Trash2 size={16} /></button>
+                            <button onClick={() => { setSelectedData(item); setIsModalOpen(true); }} className="w-full py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex justify-center border border-blue-100 shadow-sm"><Edit3 size={14} /></button>
+                            <button onClick={() => handleDelete(item.id)} className="w-full py-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex justify-center border border-red-100 shadow-sm"><Trash2 size={14} /></button>
                          </div>
                       </td>
                     </tr>
                 )) : (
                   <tr>
-                    <td colSpan={5} className="py-24 text-center">
+                    <td colSpan={6} className="py-24 text-center">
                        <Search className="mx-auto mb-4 text-slate-200" size={56} />
-                       <p className="text-sm font-black text-slate-300 uppercase tracking-[0.2em]">Belum Ada Data di Kategori Ini</p>
+                       <p className="text-sm font-black text-slate-300 uppercase tracking-[0.2em]">Data Tidak Ditemukan</p>
                     </td>
                   </tr>
                 )}
@@ -363,7 +430,6 @@ const RekapanKegiatan: React.FC = () => {
 
       </main>
 
-      {/* MODAL REKAPAN */}
       <ModalRekapan 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -371,7 +437,6 @@ const RekapanKegiatan: React.FC = () => {
         data={selectedData} 
       />
 
-      {/* IMAGE PREVIEW LIGHTBOX */}
       {previewImage && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-dark/95 p-4 backdrop-blur-xl animate-in fade-in duration-300">
           <button onClick={() => setPreviewImage(null)} className="absolute top-8 right-8 text-white/50 hover:text-white transition-all"><X size={40} /></button>
