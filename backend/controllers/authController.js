@@ -59,3 +59,17 @@ exports.login = async (req, res) => {
         res.status(500).json({ success: false, message: 'Terjadi kesalahan pada server' });
     }
 };
+
+exports.verifyPin = (req, res) => {
+    const { pin } = req.body;
+    const SECRET_PIN = process.env.REGISTER_PIN;
+
+    console.log("PIN dari Frontend:", pin);
+    console.log("PIN dari .env lokal:", SECRET_PIN);
+
+    if (pin === SECRET_PIN) {
+        return res.status(200).json({ success: true, message: 'PIN Valid, akses dibuka.' });
+    } else {
+        return res.status(403).json({ success: false, message: 'PIN Keamanan salah!' });
+    }
+};
