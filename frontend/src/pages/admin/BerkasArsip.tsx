@@ -8,7 +8,7 @@ import {
 import { API_BASE_URL } from '../../config';
 
 const KATEGORI_BERKAS = [
-  "RKA", "DPA", "KAK", "ANGKAS", "KIR", "PERKIN", "IKI", "CASHCADING, LAINNYA"
+  "RKA", "DPA", "KAK", "ANGKAS", "KIR", "PERKIN", "IKI", "CASHCADING", "LAINNYA"
 ];
 
 const BerkasArsip: React.FC = () => {
