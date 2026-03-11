@@ -48,7 +48,7 @@ const Login: React.FC = () => {
           
           <h2 className="text-3xl font-black text-brand-dark text-center mb-2">Masuk Admin</h2>
           <p className="text-slate-400 text-center text-sm mb-10 font-medium tracking-tight">
-            Kelola portal Satu Data Garut
+            Kelola portal Bidang Penyelenggaraan Statistik Sektoral
           </p>
 
           <form onSubmit={handleLogin} className="space-y-6">
