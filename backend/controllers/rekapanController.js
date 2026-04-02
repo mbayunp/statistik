@@ -1,7 +1,6 @@
 const db = require('../config/db');
 
 const rekapanController = {
-  // 1. TAMPILKAN SEMUA REKAPAN INTERNAL
   getAllRekapan: async (req, res) => {
     try {
       const [rows] = await db.execute('SELECT * FROM rekapan_kegiatan ORDER BY id DESC');
@@ -12,16 +11,16 @@ const rekapanController = {
     }
   },
 
-  // 2. TAMBAH REKAPAN BARU
   createRekapan: async (req, res) => {
     try {
       const { tanggal, nama_kegiatan, kategori, keterangan } = req.body;
       
-      if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Dokumentasi wajib diupload!' });
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ success: false, message: 'Minimal 1 dokumentasi wajib diupload!' });
       }
 
-      const dokumentasiPath = `/uploads/${req.file.filename}`;
+      const filePaths = req.files.map(file => `/uploads/${file.filename}`);
+      const dokumentasiString = JSON.stringify(filePaths);
 
       const query = `INSERT INTO rekapan_kegiatan (tanggal, nama_kegiatan, kategori, keterangan, dokumentasi) VALUES (?, ?, ?, ?, ?)`;
       
@@ -30,7 +29,7 @@ const rekapanController = {
         nama_kegiatan, 
         kategori, 
         keterangan || null, 
-        dokumentasiPath
+        dokumentasiString 
       ];
 
       const [result] = await db.execute(query, values);
@@ -42,7 +41,6 @@ const rekapanController = {
     }
   },
 
-  // 3. EDIT / UPDATE REKAPAN
   updateRekapan: async (req, res) => {
     try {
       const { id } = req.params;
@@ -51,13 +49,13 @@ const rekapanController = {
       let query;
       let values;
 
-      // Logika: Jika user mengunggah gambar baru saat edit
-      if (req.file) {
-        const dokumentasiPath = `/uploads/${req.file.filename}`;
+      if (req.files && req.files.length > 0) {
+        const filePaths = req.files.map(file => `/uploads/${file.filename}`);
+        const dokumentasiString = JSON.stringify(filePaths);
+
         query = `UPDATE rekapan_kegiatan SET tanggal=?, nama_kegiatan=?, kategori=?, keterangan=?, dokumentasi=? WHERE id=?`;
-        values = [tanggal, nama_kegiatan, kategori, keterangan || null, dokumentasiPath, id];
+        values = [tanggal, nama_kegiatan, kategori, keterangan || null, dokumentasiString, id];
       } else {
-        // Logika: Jika user HANYA mengedit teks (gambar tetap yang lama)
         query = `UPDATE rekapan_kegiatan SET tanggal=?, nama_kegiatan=?, kategori=?, keterangan=? WHERE id=?`;
         values = [tanggal, nama_kegiatan, kategori, keterangan || null, id];
       }

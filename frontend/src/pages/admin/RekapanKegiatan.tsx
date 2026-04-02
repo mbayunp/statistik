@@ -17,12 +17,14 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
-  Filter // Tambahan icon filter
+  Filter,
+  Images 
 } from 'lucide-react';
 import ModalRekapan from './ModalRekapan';
 import { API_BASE_URL } from '../../config';
 
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable'; 
 
@@ -31,12 +33,15 @@ const RekapanKegiatan: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedData, setSelectedData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  
+  // STATE UNTUK SLIDER GAMBAR MULTIPLE
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortOrder, setSortOrder] = useState<'terbaru' | 'terlama'>('terbaru');
-  const [selectedMonth, setSelectedMonth] = useState<string>('semua'); // STATE BARU UNTUK FILTER BULAN
+  const [selectedMonth, setSelectedMonth] = useState<string>('semua'); 
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -62,10 +67,43 @@ const RekapanKegiatan: React.FC = () => {
     setCurrentPage(1);
   }, [activeSubTab, selectedMonth]);
 
+  // FUNGSI PEMBACA GAMBAR (SUPER KEBAL ERROR)
+  const parseImages = (imageField: any): string[] => {
+    if (!imageField) return [];
+
+    let strData = imageField;
+
+    if (Array.isArray(strData) && typeof strData[0] === 'string' && strData[0].startsWith('[')) {
+      strData = strData[0];
+    } else if (Array.isArray(strData)) {
+      return strData;
+    }
+
+    if (typeof strData === 'string') {
+      try {
+        let parsed = JSON.parse(strData);
+        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+
+      const manualClean = strData.replace(/[\[\]"\\]/g, '').trim(); 
+      if (manualClean.includes(',')) {
+        return manualClean.split(',').map(s => s.trim()).filter(Boolean); 
+      }
+      return manualClean ? [manualClean] : [];
+    }
+
+    return [];
+  };
+
+  // FUNGSI PEMBENTUK URL YANG AMAN
   const getImageUrl = (path: string) => {
     if (!path) return "https://placehold.co/600x400?text=Tanpa+Gambar";
     if (path.startsWith('http')) return path;
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    
+    let cleanPath = path.replace(/[\[\]"\\]/g, '').trim(); 
+    cleanPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    
     return `${API_BASE_URL}${cleanPath}`;
   };
 
@@ -97,7 +135,6 @@ const RekapanKegiatan: React.FC = () => {
     return dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   };
 
-  
   let currentData = kegiatan.filter((k: any) => k.kategori === activeSubTab);
 
   if (selectedMonth !== 'semua') {
@@ -105,24 +142,16 @@ const RekapanKegiatan: React.FC = () => {
       if (!item.tanggal) return false;
       const dateObj = new Date(item.tanggal);
       if (isNaN(dateObj.getTime())) return false;
-      // getMonth() mengembalikan nilai 0 (Januari) sampai 11 (Desember)
       return dateObj.getMonth().toString() === selectedMonth;
     });
   }
 
-  // 3. Sorting
   currentData = currentData.sort((a, b) => {
     const timeA = a.tanggal ? new Date(a.tanggal).getTime() : 0;
     const timeB = b.tanggal ? new Date(b.tanggal).getTime() : 0;
-    
-    if (sortOrder === 'terbaru') {
-      return timeB - timeA; 
-    } else {
-      return timeA - timeB; 
-    }
+    return sortOrder === 'terbaru' ? timeB - timeA : timeA - timeB; 
   });
 
-  // 4. Pagination
   const totalPages = Math.ceil(currentData.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -142,26 +171,86 @@ const RekapanKegiatan: React.FC = () => {
     }
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     if (currentData.length === 0) return Swal.fire('Kosong', 'Tidak ada data', 'info');
-    const dataToExport = currentData.map((item, index) => ({
-      'No': index + 1,
-      'Tanggal Pelaksanaan': formatTanggalKalender(item.tanggal),
-      'Uraian / Judul': item.nama_kegiatan || "Tanpa Judul",
-      'Deskripsi': item.keterangan || "-",
-      'Link Dokumentasi': getImageUrl(item.gambar || item.dokumentasi)
-    }));
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Rekapan");
-    XLSX.writeFile(wb, `Laporan_${activeSubTab}_2026.xlsx`);
+    
+    Swal.fire({
+      title: 'Menyiapkan Excel...',
+      text: 'Sedang memuat gambar ke dalam baris, mohon tunggu...',
+      allowOutsideClick: false,
+      didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Rekapan');
+
+      worksheet.columns = [
+        { header: 'No', key: 'no', width: 5 },
+        { header: 'Tanggal Pelaksanaan', key: 'tanggal', width: 25 },
+        { header: 'Uraian / Judul', key: 'judul', width: 35 },
+        { header: 'Deskripsi', key: 'deskripsi', width: 45 },
+        { header: 'Dokumentasi', key: 'dokumentasi', width: 35 } // Lebar kolom gambar
+      ];
+
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF009688' } };
+      worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+      for (let i = 0; i < currentData.length; i++) {
+        const item = currentData[i];
+        
+        const row = worksheet.addRow({
+          no: i + 1,
+          tanggal: formatTanggalKalender(item.tanggal),
+          judul: item.nama_kegiatan || "Tanpa Judul",
+          deskripsi: item.keterangan || "-"
+        });
+        row.alignment = { vertical: 'top', wrapText: true };
+
+        const images = parseImages(item.gambar || item.dokumentasi);
+        
+        if (images.length > 0) {
+           const maxImages = Math.min(images.length, 3);
+           row.height = maxImages * 90; 
+
+           for (let imgIndex = 0; imgIndex < maxImages; imgIndex++) {
+              const base64Img = await getBase64ImageFromUrl(getImageUrl(images[imgIndex]));
+              
+              if (base64Img) {
+                 const imageId = workbook.addImage({
+                    base64: base64Img,
+                    extension: 'jpeg',
+                 });
+
+                 worksheet.addImage(imageId, {
+                    tl: { col: 4.1, row: i + 1 + (imgIndex * 0.9) }, 
+                    ext: { width: 140, height: 80 }
+                 });
+              }
+           }
+        } else {
+           row.getCell('dokumentasi').value = 'Tanpa Gambar';
+           row.getCell('dokumentasi').alignment = { vertical: 'middle', horizontal: 'center' };
+        }
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      saveAs(new Blob([buffer]), `Laporan_${activeSubTab}_2026.xlsx`);
+      Swal.close();
+
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Gagal', 'Terjadi kesalahan saat memproses file Excel.', 'error');
+    }
   };
 
   const exportPDF = async () => {
     if (currentData.length === 0) return Swal.fire('Kosong', 'Tidak ada data', 'info');
+    
     Swal.fire({
       title: 'Menyiapkan PDF...',
-      text: 'Sedang memuat gambar dokumen.',
+      text: 'Sedang menyusun gambar dokumen.',
       allowOutsideClick: false,
       didOpen: () => { Swal.showLoading(); }
     });
@@ -173,13 +262,19 @@ const RekapanKegiatan: React.FC = () => {
     doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 26);
 
     const tableData = [];
-    const base64Images: (string | null)[] = [];
+    const allRowImages: string[][] = [];
 
     for (let i = 0; i < currentData.length; i++) {
       const item = currentData[i];
-      const imgUrl = getImageUrl(item.gambar || item.dokumentasi);
-      const base64Img = await getBase64ImageFromUrl(imgUrl);
-      base64Images.push(base64Img);
+      const images = parseImages(item.gambar || item.dokumentasi);
+      
+      const rowBase64s: string[] = [];
+      for (const img of images.slice(0, 3)) {
+         const base64Img = await getBase64ImageFromUrl(getImageUrl(img));
+         if (base64Img) rowBase64s.push(base64Img);
+      }
+      allRowImages.push(rowBase64s);
+      
       tableData.push([
         i + 1, 
         formatTanggalKalender(item.tanggal), 
@@ -203,14 +298,20 @@ const RekapanKegiatan: React.FC = () => {
       },
       didParseCell: (data) => {
         if (data.section === 'body' && data.column.index === 4) {
-            data.cell.styles.minCellHeight = 30; 
+            const rowImgs = allRowImages[data.row.index] || [];
+            data.cell.styles.minCellHeight = rowImgs.length > 0 ? (rowImgs.length * 30) + 4 : 30; 
         }
       },
       didDrawCell: (data) => {
         if (data.section === 'body' && data.column.index === 4) {
-           const base64Img = base64Images[data.row.index];
-           if (base64Img && base64Img.startsWith('data:image')) {
-              doc.addImage(base64Img, 'JPEG', data.cell.x + 2, data.cell.y + 2, 36, 26);
+           const rowImgs = allRowImages[data.row.index] || [];
+           let currentY = data.cell.y + 2; // Titik awal koordinat Y
+           
+           for (const base64Img of rowImgs) {
+              if (base64Img && base64Img.startsWith('data:image')) {
+                 doc.addImage(base64Img, 'JPEG', data.cell.x + 2, currentY, 36, 26);
+                 currentY += 30;
+              }
            }
         }
       }
@@ -233,6 +334,10 @@ const RekapanKegiatan: React.FC = () => {
       Swal.fire('Gagal', 'Tidak bisa mengunduh gambar', 'error');
     }
   };
+
+  // FUNGSI NAVIGASI SLIDER
+  const nextImage = () => setCurrentPreviewIndex((prev) => (prev + 1) % previewImages.length);
+  const prevImage = () => setCurrentPreviewIndex((prev) => (prev - 1 + previewImages.length) % previewImages.length);
 
   return (
     <div className="flex-1 bg-slate-50/50 min-h-screen flex flex-col">
@@ -268,10 +373,8 @@ const RekapanKegiatan: React.FC = () => {
           </div>
         </div>
 
-        {/* === FILTER BARS (BULAN, URUTAN & LIMIT BARIS) === */}
         <div className="flex flex-wrap justify-end mb-6 gap-3">
           
-          {/* Filter Bulan Baru */}
           <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
              <Filter size={14} className="text-slate-400" />
              <span className="text-[10px] font-black text-slate-400 uppercase">Bulan:</span>
@@ -296,7 +399,6 @@ const RekapanKegiatan: React.FC = () => {
               </select>
           </div>
 
-          {/* Filter Urutan */}
           <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
              <ArrowUpDown size={14} className="text-slate-400" />
              <span className="text-[10px] font-black text-slate-400 uppercase">Urutkan:</span>
@@ -310,7 +412,6 @@ const RekapanKegiatan: React.FC = () => {
               </select>
           </div>
 
-          {/* Limit Baris */}
           <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
              <span className="text-[10px] font-black text-slate-400 uppercase">Baris:</span>
              <select 
@@ -325,7 +426,6 @@ const RekapanKegiatan: React.FC = () => {
           </div>
         </div>
 
-        {/* === DATA TABLE === */}
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden relative">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -347,7 +447,13 @@ const RekapanKegiatan: React.FC = () => {
                         <p className="mt-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Memuat Data...</p>
                      </td>
                    </tr>
-                ) : currentItems.length > 0 ? currentItems.map((item: any, index: number) => (
+                ) : currentItems.length > 0 ? currentItems.map((item: any, index: number) => {
+                  
+                  // MENGURAI DATA GAMBAR UNTUK SETIAP BARIS
+                  const images = parseImages(item.gambar || item.dokumentasi);
+                  const displayImageUrl = images.length > 0 ? getImageUrl(images[0]) : "https://placehold.co/600x400?text=Tanpa+Gambar";
+
+                  return (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
                       
                       <td className="p-6 align-top text-center font-black text-slate-400 text-sm">
@@ -368,15 +474,28 @@ const RekapanKegiatan: React.FC = () => {
 
                       <td className="p-6 align-top text-center">
                         <div 
-                          onClick={() => setPreviewImage(getImageUrl(item.gambar || item.dokumentasi))} 
-                          className="relative overflow-hidden rounded-2xl border border-slate-100 cursor-pointer group/img shadow-sm bg-slate-100 w-full h-24"
+                          onClick={() => {
+                            if (images.length > 0) {
+                              setPreviewImages(images);
+                              setCurrentPreviewIndex(0);
+                            }
+                          }} 
+                          className={`relative overflow-hidden rounded-2xl border border-slate-100 shadow-sm bg-slate-100 w-full h-24 ${images.length > 0 ? 'cursor-pointer group/img' : ''}`}
                         >
                             <img 
-                               src={getImageUrl(item.gambar || item.dokumentasi)} 
+                               src={displayImageUrl} 
                                className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700" 
                                alt="Dokumentasi" 
                                onError={(e) => { e.currentTarget.src = "https://placehold.co/400x300?text=Error+Loading+Image"; }}
                             />
+                            
+                            {/* BADGE MULTIPLE IMAGES */}
+                            {images.length > 1 && (
+                              <div className="absolute top-2 right-2 bg-brand-dark/80 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-lg border border-white/20 shadow-lg flex items-center gap-1 z-10">
+                                <Images size={12} /> +{images.length - 1}
+                              </div>
+                            )}
+
                             <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover/img:opacity-100 transition-all flex items-center justify-center backdrop-blur-[2px]">
                                <Maximize2 className="text-white" size={24} />
                             </div>
@@ -390,7 +509,8 @@ const RekapanKegiatan: React.FC = () => {
                          </div>
                       </td>
                     </tr>
-                )) : (
+                  )
+                }) : (
                   <tr>
                     <td colSpan={6} className="py-24 text-center">
                        <Search className="mx-auto mb-4 text-slate-200" size={56} />
@@ -403,7 +523,6 @@ const RekapanKegiatan: React.FC = () => {
           </div>
         </div>
 
-        {/* === PAGINATION === */}
         {currentData.length > 0 && (
           <div className="mt-6 flex flex-col sm:flex-row justify-between items-center px-4 gap-4">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -437,18 +556,54 @@ const RekapanKegiatan: React.FC = () => {
         data={selectedData} 
       />
 
-      {previewImage && (
+      {/* MODAL SLIDER GALLERY */}
+      {previewImages.length > 0 && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-dark/95 p-4 backdrop-blur-xl animate-in fade-in duration-300">
-          <button onClick={() => setPreviewImage(null)} className="absolute top-8 right-8 text-white/50 hover:text-white transition-all"><X size={40} /></button>
-          <div className="max-w-4xl w-full flex flex-col items-center animate-in zoom-in duration-300">
-            <img src={previewImage} alt="Preview" className="max-w-full max-h-[75vh] object-contain rounded-[2rem] shadow-2xl border border-white/10" />
+          <button onClick={() => setPreviewImages([])} className="absolute top-8 right-8 text-white/50 hover:text-white transition-all z-50">
+            <X size={40} />
+          </button>
+
+          {previewImages.length > 1 && (
+            <button onClick={prevImage} className="absolute left-4 lg:left-12 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all z-50">
+              <ChevronLeft size={32} />
+            </button>
+          )}
+
+          <div className="max-w-5xl w-full flex flex-col items-center relative overflow-hidden px-12">
+            <div key={currentPreviewIndex} className="animate-in fade-in zoom-in-95 duration-300 w-full flex justify-center">
+              <img 
+                src={getImageUrl(previewImages[currentPreviewIndex])} 
+                alt={`Preview ${currentPreviewIndex + 1}`} 
+                className="max-w-full max-h-[70vh] object-contain rounded-[2rem] shadow-2xl border border-white/10" 
+              />
+            </div>
+
+            {previewImages.length > 1 && (
+              <div className="flex items-center gap-2 mt-6">
+                {previewImages.map((_, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setCurrentPreviewIndex(idx)}
+                    className={`h-2.5 rounded-full transition-all duration-300 ${idx === currentPreviewIndex ? 'w-8 bg-brand-primary' : 'w-2.5 bg-white/30 hover:bg-white/50'}`}
+                  />
+                ))}
+              </div>
+            )}
+
             <button 
-              onClick={() => forceDownloadImage(previewImage)} 
-              className="mt-10 bg-brand-primary hover:bg-brand-dark text-white px-10 py-5 rounded-full font-black text-xs transition-all flex items-center gap-3 shadow-2xl active:scale-95"
+              onClick={() => forceDownloadImage(getImageUrl(previewImages[currentPreviewIndex]))} 
+              className="mt-8 bg-brand-primary hover:bg-brand-dark text-white px-10 py-4 rounded-full font-black text-xs transition-all flex items-center gap-3 shadow-2xl active:scale-95"
             >
-              <DownloadCloud size={20} /> UNDUH DOKUMEN FISIK
+              <DownloadCloud size={20} /> UNDUH GAMBAR INI
             </button>
           </div>
+
+          {previewImages.length > 1 && (
+            <button onClick={nextImage} className="absolute right-4 lg:right-12 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all z-50">
+              <ChevronRight size={32} />
+            </button>
+          )}
+
         </div>
       )}
     </div>

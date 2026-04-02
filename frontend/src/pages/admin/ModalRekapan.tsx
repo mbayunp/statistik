@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom'; // Tambahkan ini
-import { X, Calendar, FileText, Tag, UploadCloud, Loader2, AlignLeft } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { X, Calendar, FileText, Tag, UploadCloud, Loader2, AlignLeft, Images } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { API_BASE_URL } from '../../config';
 
@@ -13,9 +13,8 @@ interface ModalProps {
 
 const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileStatus, setFileStatus] = useState<string | null>(null);
   
-  // MENGAMBIL KATEGORI AKTIF DARI URL SEBAGAI DEFAULT
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const activeSubTab = queryParams.get('kategori') || 'PENGELOLAAN PORTAL';
@@ -25,14 +24,12 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     nama_kegiatan: '',
     keterangan: '',
     tipe: 'bulanan',
-    kategori: activeSubTab, // Set default kategori sesuai halaman saat ini
-    dokumentasi: null as File | null
+    kategori: activeSubTab,
+    dokumentasi: [] as File[] // SEKARANG BERUPA ARRAY OF FILES
   });
 
-  // MENGISI FORM OTOMATIS SAAT MODAL DIBUKA
   useEffect(() => {
     if (data && isOpen) {
-      // MODE EDIT: Isi sesuai data yang diklik
       const formattedDate = data.tanggal ? data.tanggal.split('T')[0] : '';
       
       setFormData({
@@ -41,31 +38,45 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
         keterangan: data.keterangan || '',
         tipe: data.tipe || 'bulanan',
         kategori: data.kategori || activeSubTab, 
-        dokumentasi: null 
+        dokumentasi: [] 
       });
-      setFileName(data.dokumentasi || data.gambar ? "Gambar sudah ada (Abaikan jika tidak ingin mengubah)" : null);
+
+      // Logika untuk menampilkan jumlah gambar yang sudah ada saat mode Edit
+      if (data.dokumentasi || data.gambar) {
+        let count = 1;
+        const imgData = data.dokumentasi || data.gambar;
+        try {
+           const parsed = JSON.parse(imgData);
+           if (Array.isArray(parsed)) count = parsed.length;
+        } catch(e) {
+           if (imgData.includes(',')) count = imgData.split(',').length;
+        }
+        setFileStatus(`${count} gambar sudah tersimpan (Abaikan jika tak diubah)`);
+      } else {
+        setFileStatus(null);
+      }
     
     } else if (isOpen && !data) {
-      // MODE TAMBAH: Reset form TAPI pertahankan kategori sesuai URL saat ini
       setFormData({
         tanggal: '', 
         nama_kegiatan: '', 
         keterangan: '', 
         tipe: 'bulanan', 
-        kategori: activeSubTab, // Penting! Agar kategori tidak mereset ke default awal
-        dokumentasi: null
+        kategori: activeSubTab, 
+        dokumentasi: []
       });
-      setFileName(null);
+      setFileStatus(null);
     }
-  }, [data, isOpen, activeSubTab]); // activeSubTab dimasukkan ke dependency array
+  }, [data, isOpen, activeSubTab]); 
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.dokumentasi && !data) {
-      Swal.fire('Peringatan', 'Dokumentasi (gambar) wajib diunggah!', 'warning');
+    // Validasi: Wajib unggah saat tambah data baru
+    if (formData.dokumentasi.length === 0 && !data) {
+      Swal.fire('Peringatan', 'Minimal 1 dokumentasi (gambar) wajib diunggah!', 'warning');
       return;
     }
 
@@ -77,8 +88,11 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     formPayload.append('tipe', formData.tipe);
     formPayload.append('kategori', formData.kategori);
     
-    if (formData.dokumentasi) {
-      formPayload.append('dokumentasi', formData.dokumentasi);
+    // LOOPING UNTUK MENGIRIM MULTIPLE FILES DENGAN FIELD NAME YANG SAMA
+    if (formData.dokumentasi.length > 0) {
+      formData.dokumentasi.forEach((file) => {
+        formPayload.append('dokumentasi', file);
+      });
     }
 
     const url = data ? `${API_BASE_URL}/api/rekapan/${data.id}` : `${API_BASE_URL}/api/rekapan`;
@@ -137,6 +151,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
         <div className="overflow-y-auto p-6 custom-scrollbar">
           <form id="formKegiatan" onSubmit={handleSubmit} className="space-y-5">
             
+            {/* Input Tanggal */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Tanggal Kegiatan</label>
               <div className="relative group">
@@ -151,6 +166,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
               </div>
             </div>
 
+            {/* Input Judul */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Uraian / Judul Kegiatan</label>
               <div className="relative group">
@@ -166,6 +182,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
               </div>
             </div>
 
+            {/* Input Deskripsi */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Deskripsi Lengkap</label>
               <div className="relative group">
@@ -179,6 +196,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
               </div>
             </div>
 
+            {/* Input Kategori */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Kategori Sektoral</label>
               <div className="relative group">
@@ -200,32 +218,39 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
               </div>
             </div>
 
+            {/* INPUT MULTIPLE IMAGES */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Unggah Dokumentasi (Gambar)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Unggah Dokumentasi (Bisa lebih dari 1 gambar)</label>
               <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-300 bg-slate-50 rounded-2xl cursor-pointer hover:bg-brand-primary/5 hover:border-brand-primary transition-all group">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
                   <div className="w-12 h-12 mb-3 bg-white rounded-full shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <UploadCloud className="text-brand-primary" size={24} />
+                    {formData.dokumentasi.length > 1 ? <Images className="text-brand-primary" size={24} /> : <UploadCloud className="text-brand-primary" size={24} />}
                   </div>
-                  {fileName ? (
-                    <p className="text-xs text-brand-primary font-bold line-clamp-2">{fileName}</p>
+                  
+                  {fileStatus ? (
+                    <p className="text-xs text-brand-primary font-bold bg-brand-primary/10 px-3 py-1 rounded-full">{fileStatus}</p>
                   ) : (
                     <>
                       <p className="mb-1 text-sm text-slate-500 font-medium">
-                        <span className="font-bold text-brand-primary">Klik untuk unggah</span> atau seret gambar ke sini
+                        <span className="font-bold text-brand-primary">Klik untuk unggah</span> banyak gambar
                       </p>
-                      <p className="text-xs text-slate-400">PNG, JPG atau JPEG (Maks. 5MB)</p>
+                      <p className="text-xs text-slate-400">PNG, JPG atau JPEG (Bisa pilih beberapa sekaligus)</p>
                     </>
                   )}
                 </div>
+                
+                {/* TAMBAHAN PROPERTI MULTIPLE */}
                 <input 
                   type="file" 
+                  multiple 
                   className="hidden" 
                   accept="image/*"
                   onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    setFormData({...formData, dokumentasi: file || null});
-                    setFileName(file ? file.name : null);
+                    if (e.target.files) {
+                      const filesArray = Array.from(e.target.files);
+                      setFormData({...formData, dokumentasi: filesArray});
+                      setFileStatus(`${filesArray.length} gambar dipilih`);
+                    }
                   }} 
                 />
               </label>
