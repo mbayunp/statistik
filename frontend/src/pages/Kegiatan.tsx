@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
-  Search, Filter, Calendar, LayoutGrid, List, 
+  Search, LayoutGrid, List, 
   ChevronRight, Download, Eye, Image as ImageIcon,
   Activity, Clock, CalendarDays, TrendingUp
 } from 'lucide-react';
@@ -18,47 +18,47 @@ interface Kegiatan {
 const KegiatanPage: React.FC = () => {
   const [allKegiatan, setAllKegiatan] = useState<Kegiatan[]>([]);
   const [filteredKegiatan, setFilteredKegiatan] = useState<Kegiatan[]>([]);
-  const [loading, setLoading] = useState(true);
+
   
   // States untuk Filter
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipe, setFilterTipe] = useState('Semua');
   const [filterTahun, setFilterTahun] = useState('Semua');
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/kegiatan`);
       setAllKegiatan(res.data.data);
       setFilteredKegiatan(res.data.data);
     } catch (err) {
       console.error("Gagal ambil data:", err);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let result = allKegiatan;
+    setTimeout(() => { fetchData(); }, 0);
+  }, [fetchData]);
 
-    if (filterTipe !== 'Semua') {
-      result = result.filter(k => k.tipe.toLowerCase() === filterTipe.toLowerCase());
-    }
+  useEffect(() => {
+    setTimeout(() => {
+      let result = allKegiatan;
 
-    if (filterTahun !== 'Semua') {
-      result = result.filter(k => new Date(k.tanggal).getFullYear().toString() === filterTahun);
-    }
+      if (filterTipe !== 'Semua') {
+        result = result.filter(k => k.tipe.toLowerCase() === filterTipe.toLowerCase());
+      }
 
-    if (searchTerm) {
-      result = result.filter(k => 
-        k.keterangan.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+      if (filterTahun !== 'Semua') {
+        result = result.filter(k => new Date(k.tanggal).getFullYear().toString() === filterTahun);
+      }
 
-    setFilteredKegiatan(result);
+      if (searchTerm) {
+        result = result.filter(k => 
+          k.keterangan.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      setFilteredKegiatan(result);
+    }, 0);
   }, [searchTerm, filterTipe, filterTahun, allKegiatan]);
 
   const getImageUrl = (path: string) => {
@@ -92,7 +92,7 @@ const KegiatanPage: React.FC = () => {
             Dokumentasi langkah nyata Dinas Komunikasi dan Informatika Kabupaten Garut dalam rangka penguatan implementasi Satu Data Daerah yang akurat dan terintegrasi.
           </p>
         </div>
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-brand-primary/10 blur-[100px] -z-0"></div>
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-brand-primary/10 blur-[100px] z-0"></div>
       </section>
 
       <div className="container mx-auto px-6 -mt-10 relative z-20">
@@ -105,9 +105,9 @@ const KegiatanPage: React.FC = () => {
             { label: 'Semesteran', val: stats.semesteran, icon: <CalendarDays />, color: 'amber' },
             { label: 'Tahun 2026', val: stats.tahunIni, icon: <TrendingUp />, color: 'purple' },
           ].map((s, i) => (
-            <div key={i} className="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 flex items-center gap-5 border border-white">
+            <div key={i} className="bg-white p-6 rounded-4xl shadow-xl shadow-slate-200/50 flex items-center gap-5 border border-white">
               <div className={`w-14 h-14 rounded-2xl bg-${s.color}-50 text-${s.color}-600 flex items-center justify-center`}>
-                {React.cloneElement(s.icon as React.ReactElement, { size: 28 })}
+                {React.cloneElement(s.icon as React.ReactElement<{ size?: number }>, { size: 28 })}
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{s.label}</p>
@@ -159,7 +159,7 @@ const KegiatanPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {filteredKegiatan.slice(0, 6).map((item) => (
               <div key={item.id} className="group bg-white rounded-[2.5rem] p-4 border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500">
-                <div className="relative h-56 rounded-[2rem] overflow-hidden mb-6">
+                <div className="relative h-56 rounded-4xl overflow-hidden mb-6">
                   <img src={getImageUrl(item.gambar)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter">
                     {item.tipe}
@@ -235,7 +235,7 @@ const KegiatanPage: React.FC = () => {
           </div>
           <div className="columns-1 md:columns-3 lg:columns-4 gap-6 space-y-6">
             {allKegiatan.map((item) => (
-              <div key={item.id} className="relative group overflow-hidden rounded-[2rem] cursor-pointer break-inside-avoid">
+              <div key={item.id} className="relative group overflow-hidden rounded-4xl cursor-pointer break-inside-avoid">
                 <img 
                   src={getImageUrl(item.gambar)} 
                   alt="" 

@@ -4,12 +4,6 @@ import {
   Share2, Database, Users, Rocket, CheckCircle2, 
   ArrowRight, Link as LinkIcon 
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-
-// ==========================================
-// 1. SUB-KOMPONEN
-// ==========================================
 
 const TentangHero = () => (
   <div className="bg-brand-dark text-white py-24 relative overflow-hidden">
@@ -39,7 +33,7 @@ const ProfilSection = () => (
       <p className="text-lg text-slate-600 leading-relaxed mb-8">
         Bidang Penyelenggara Statistik Sektoral merupakan bagian dari <strong>Dinas Komunikasi dan Informatika Kabupaten Garut</strong> yang memiliki tugas melaksanakan pengelolaan data sektoral daerah dalam rangka mendukung kebijakan pembangunan berbasis data.
       </p>
-      <div className="bg-slate-50 border border-slate-200 rounded-[2rem] p-8 md:p-12 text-left">
+      <div className="bg-slate-50 border border-slate-200 rounded-4xl p-8 md:p-12 text-left">
         <p className="text-slate-600 mb-6 font-medium">Sebagai <strong>Walidata Daerah</strong>, bidang ini bertanggung jawab dalam memastikan bahwa seluruh data yang dihasilkan oleh Perangkat Daerah memenuhi prinsip:</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {['Akurat', 'Mutakhir', 'Terpadu', 'Dapat dipertanggungjawabkan'].map((prinsip, i) => (
@@ -76,7 +70,7 @@ const LandasanHukum = () => (
           "Peraturan Bupati Kabupaten Garut tentang Satu Data Daerah",
           "Kebijakan Nasional Satu Data Indonesia"
         ].map((hukum, i) => (
-          <div key={i} className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 flex items-start gap-4">
+          <div key={i} className="bg-white p-6 rounded-4xl shadow-sm border border-slate-200 flex items-start gap-4">
             <span className="text-brand-primary font-black text-2xl">0{i + 1}</span>
             <p className="text-slate-600 font-medium leading-relaxed">{hukum}</p>
           </div>
@@ -140,7 +134,7 @@ const PeranWalidata = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
           {peran.map((item, i) => (
-            <div key={i} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-xl transition-all group">
+            <div key={i} className="bg-white p-8 rounded-4xl shadow-sm border border-slate-200 hover:shadow-xl transition-all group">
               <div className="w-14 h-14 bg-brand-primary/10 text-brand-primary rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-brand-primary group-hover:text-white transition-all">
                 {item.icon}
               </div>
@@ -262,14 +256,10 @@ const KomitmenPengembangan = () => (
   </div>
 );
 
-// ==========================================
-// 2. HALAMAN UTAMA (GABUNGAN)
-// ==========================================
-
 const Tentang: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
-      <main className="flex-grow">
+      <main className="grow">
         <TentangHero />
         <ProfilSection />
         <LandasanHukum />

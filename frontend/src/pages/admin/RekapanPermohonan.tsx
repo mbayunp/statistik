@@ -6,7 +6,6 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { 
   Database, 
-  Search, 
   FileSpreadsheet, 
   Download, 
   Filter, 
@@ -18,6 +17,7 @@ import {
 } from 'lucide-react';
 
 const RekapanPermohonan: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -25,7 +25,7 @@ const RekapanPermohonan: React.FC = () => {
   const [filterTahun, setFilterTahun] = useState<string>('');
   const [filterBulan, setFilterBulan] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const itemsPerPage = 12;
 
   const fetchData = async () => {
     try {
@@ -47,8 +47,8 @@ const RekapanPermohonan: React.FC = () => {
 
   // Filter Logika
   const filteredData = data.filter(d => {
-    let matchTahun = filterTahun === '' || d.tahun.toString() === filterTahun;
-    let matchBulan = filterBulan === '' || d.bulan.toLowerCase() === filterBulan.toLowerCase();
+    const matchTahun = filterTahun === '' || d.tahun.toString() === filterTahun;
+    const matchBulan = filterBulan === '' || d.bulan.toLowerCase() === filterBulan.toLowerCase();
     return matchTahun && matchBulan;
   });
 
@@ -59,6 +59,7 @@ const RekapanPermohonan: React.FC = () => {
   const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
   // Dapatkan daftar tahun unik untuk dropdown
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const uniqueYears = Array.from(new Set(data.map(d => d.tahun))).sort((a: any, b: any) => b - a);
 
   // Hitung Total dari data yang difilter
@@ -156,7 +157,7 @@ const RekapanPermohonan: React.FC = () => {
       {/* FILTER & STATISTIK CARD */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Kolom Filter */}
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col justify-center gap-4">
+        <div className="bg-white p-6 rounded-4xl shadow-sm border border-slate-200 flex flex-col justify-center gap-4">
            <div className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest mb-1">
              <Filter size={16} /> Filter Data
            </div>
@@ -179,7 +180,7 @@ const RekapanPermohonan: React.FC = () => {
         </div>
 
         {/* Kolom Summary Statistik */}
-        <div className="lg:col-span-2 bg-brand-dark p-6 rounded-[2rem] shadow-xl text-white flex flex-col justify-center relative overflow-hidden">
+        <div className="lg:col-span-2 bg-brand-dark p-6 rounded-4xl shadow-xl text-white flex flex-col justify-center relative overflow-hidden">
            <div className="relative z-10 flex justify-between items-center">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Total Akumulasi</p>

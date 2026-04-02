@@ -3,7 +3,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../../config';
 import { 
   Plus, Edit, Trash2, Check, X, Search, 
-  ChevronLeft, ChevronRight, Filter,
+  ChevronLeft, ChevronRight,
   FileText, ClipboardCheck, BarChart3, Globe, Eye
 } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -57,6 +57,7 @@ const DaftarStatistikAdmin: React.FC = () => {
     const [showModal, setShowModal] = useState(false);       // Modal Edit/Tambah
     const [showDetail, setShowDetail] = useState(false);     // Modal Detail Landscape
     const [activeTab, setActiveTab] = useState('umum');      // Tab aktif di form
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [selectedItem, setSelectedItem] = useState<any>(null); // Data untuk modal detail
 
     // State Form Lengkap (29 Kolom)
@@ -130,7 +131,7 @@ const DaftarStatistikAdmin: React.FC = () => {
             Swal.fire({ icon: 'success', title: 'Berhasil Disimpan', timer: 1500, showConfirmButton: false });
             setShowModal(false);
             fetchData();
-        } catch (error) { 
+        } catch { 
             Swal.fire('Error', 'Gagal menyimpan data', 'error'); 
         }
     };
@@ -150,12 +151,13 @@ const DaftarStatistikAdmin: React.FC = () => {
                     await axios.delete(`${API_BASE_URL}/api/statistik-sektoral/${id}`);
                     Swal.fire('Terhapus!', 'Data berhasil dihapus.', 'success');
                     fetchData();
-                } catch (error) { Swal.fire('Error', 'Gagal menghapus data.', 'error'); }
+                } catch { Swal.fire('Error', 'Gagal menghapus data.', 'error'); }
             }
         });
     };
 
     // === LOGIKA FILTER & PAGINATION ===
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filteredData = data.filter((item: any) =>
         item.nama_kegiatan?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.produsen_data?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -167,6 +169,7 @@ const DaftarStatistikAdmin: React.FC = () => {
     const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
     // === HELPER KOMPONEN DETAIL ROW ===
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const DetailItem = ({ label, value, isBadge = false }: any) => {
         // Logika warna khusus untuk Cara Pengumpulan Data
         const getCaraPengumpulanColor = (val: string) => {
@@ -191,7 +194,7 @@ const DaftarStatistikAdmin: React.FC = () => {
                         {value}
                     </div>
                 ) : (
-                    <span className="text-sm font-bold text-slate-700 break-words">{value || '-'}</span>
+                    <span className="text-sm font-bold text-slate-700 wrap-break-word">{value || '-'}</span>
                 )}
             </div>
         );
@@ -255,6 +258,7 @@ const DaftarStatistikAdmin: React.FC = () => {
                             {loading ? (
                                 <tr><td colSpan={6} className="p-10 text-center text-slate-400 font-bold animate-pulse">Memuat data...</td></tr>
                             ) : currentItems.length > 0 ? (
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 currentItems.map((item: any, index: number) => (
                                     <tr key={item.id} className="hover:bg-slate-50/50 group transition-all">
                                         <td className="px-6 py-5 sticky left-0 bg-white group-hover:bg-slate-50 z-10 text-center font-bold text-slate-300">
@@ -308,7 +312,7 @@ const DaftarStatistikAdmin: React.FC = () => {
 
             {/* MODAL 1: DETAIL LANDSCAPE (READ ONLY) */}
             {showDetail && selectedItem && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+                <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
                     <div className="bg-white w-full max-w-6xl rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-300">
                         <div className="flex justify-between items-center mb-8 pb-6 border-b border-slate-100">
                             <div>
@@ -320,7 +324,7 @@ const DaftarStatistikAdmin: React.FC = () => {
 
                         {/* GRID LANDSCAPE 3 KOLOM */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
-                            <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 h-full">
+                            <div className="bg-slate-50 p-8 rounded-4xl border border-slate-100 h-full">
                                 <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.2em] mb-6 flex items-center gap-2"><FileText size={18}/> Informasi Identitas</h3>
                                 <div className="space-y-4">
                                     <DetailItem label="Nama Kegiatan" value={selectedItem.nama_kegiatan} />
@@ -331,7 +335,7 @@ const DaftarStatistikAdmin: React.FC = () => {
                                     <DetailItem label="Jenis Dokumen" value={selectedItem.jenis_dokumen_perencanaan} />
                                 </div>
                             </div>
-                            <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 h-full">
+                            <div className="bg-slate-50 p-8 rounded-4xl border border-slate-100 h-full">
                                 <h3 className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-6 flex items-center gap-2"><ClipboardCheck size={18}/> Rekomendasi & Metadata</h3>
                                 <div className="space-y-4">
                                     <DetailItem label="Sudah Meminta Rekom" value={selectedItem.sudah_meminta_rekomendasi} isBadge />
@@ -342,7 +346,7 @@ const DaftarStatistikAdmin: React.FC = () => {
                                     <DetailItem label="Metadata Indikator" value={selectedItem.ada_metadata_indikator} isBadge />
                                 </div>
                             </div>
-                            <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 h-full">
+                            <div className="bg-slate-50 p-8 rounded-4xl border border-slate-100 h-full">
                                 <h3 className="text-[11px] font-black text-amber-600 uppercase tracking-[0.2em] mb-6 flex items-center gap-2"><BarChart3 size={18}/> Teknis & Diseminasi</h3>
                                 <div className="space-y-4">
                                     <DetailItem label="Jumlah Variabel" value={selectedItem.jumlah_variabel} />
@@ -367,7 +371,7 @@ const DaftarStatistikAdmin: React.FC = () => {
 
             {/* MODAL 2: FORM INPUT TABS (CREATE / UPDATE) */}
             {showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
                         <div className="flex flex-col md:flex-row h-[80vh]">
                             
