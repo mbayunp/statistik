@@ -17,6 +17,7 @@ const KeuanganPage: React.FC = () => {
   const isAnggaran = jenis === 'anggaran';
   const titleText = isAnggaran ? 'Realisasi Anggaran' : `PBJ - ${kategori === 'modal' ? 'Modal' : 'Pegawai'}`;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ const KeuanganPage: React.FC = () => {
     keterangan: ''
   });
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     try {
       setLoading(true);
       const query = kategori ? `?jenis=${jenis}&kategori=${kategori}` : `?jenis=${jenis}`;
@@ -45,13 +46,13 @@ const KeuanganPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [jenis, kategori]);
 
   useEffect(() => {
     fetchData();
     setSearchTerm('');
     setCurrentPage(1);
-  }, [jenis, kategori]);
+  }, [jenis, kategori, fetchData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +75,9 @@ const KeuanganPage: React.FC = () => {
       setShowModal(false); setFile(null);
       setFormData({ judul_laporan: '', tahun: new Date().getFullYear(), periode: '', keterangan: '' });
       fetchData();
-    } catch (err: any) {
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
       Swal.fire('Error', err.response?.data?.message || 'Gagal menyimpan laporan', 'error');
     }
   };
@@ -201,7 +204,7 @@ const KeuanganPage: React.FC = () => {
 
       {/* MODAL FORM */}
       {showModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
             <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <div>
@@ -237,8 +240,8 @@ const KeuanganPage: React.FC = () => {
                   <textarea placeholder="Tambahkan catatan jika ada..." className="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 ring-brand-primary text-sm font-bold text-slate-700 h-24" value={formData.keterangan} onChange={e => setFormData({...formData, keterangan: e.target.value})} />
                 </div>
 
-                <div className="col-span-2 p-6 bg-slate-50 rounded-[2rem] border border-slate-200 border-dashed">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4 flex items-center gap-2">
+                <div className="col-span-2 p-6 bg-slate-50 rounded-4xl border border-slate-200 border-dashed">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <FileText size={16} /> Pilih Dokumen Laporan (PDF / Excel)
                   </label>
                   <input 
@@ -251,7 +254,7 @@ const KeuanganPage: React.FC = () => {
                 </div>
 
               </div>
-              <button type="submit" className="w-full mt-8 bg-brand-dark text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-xl hover:bg-brand-primary transition-all active:scale-[0.98]">Simpan & Publikasikan Laporan</button>
+              <button type="submit" className="w-full mt-8 bg-brand-dark text-white py-5 rounded-4xl font-black uppercase text-xs tracking-[0.2em] shadow-xl hover:bg-brand-primary transition-all active:scale-[0.98]">Simpan & Publikasikan Laporan</button>
             </form>
           </div>
         </div>

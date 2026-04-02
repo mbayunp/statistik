@@ -8,6 +8,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRefresh: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any; 
 }
 
@@ -48,7 +49,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
         try {
            const parsed = JSON.parse(imgData);
            if (Array.isArray(parsed)) count = parsed.length;
-        } catch(e) {
+        } catch {
            if (imgData.includes(',')) count = imgData.split(',').length;
         }
         setFileStatus(`${count} gambar sudah tersimpan (Abaikan jika tak diubah)`);
@@ -128,12 +129,12 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-0">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 sm:p-0">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
       
-      <div className="bg-white w-full max-w-xl rounded-[2rem] shadow-2xl relative z-10 transform transition-all flex flex-col max-h-[90vh]">
+      <div className="bg-white w-full max-w-xl rounded-4xl shadow-2xl relative z-10 transform transition-all flex flex-col max-h-[90vh]">
         
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-[2rem]">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-4xl">
           <div>
             <h3 className="text-xl font-black text-brand-dark tracking-tight">
               {data ? 'Edit Kegiatan' : 'Tambah Kegiatan'}
@@ -259,12 +260,12 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
           </form>
         </div>
 
-        <div className="p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-[2rem]">
+        <div className="p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-4xl">
           <button 
             type="submit" 
             form="formKegiatan"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/40 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-linear-to-r from-brand-primary to-brand-secondary text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/40 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <><Loader2 className="animate-spin" size={20} /> MENYIMPAN DATA...</>
