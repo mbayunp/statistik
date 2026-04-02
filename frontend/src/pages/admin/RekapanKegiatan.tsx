@@ -194,7 +194,7 @@ const RekapanKegiatan: React.FC = () => {
         { header: 'Tanggal Pelaksanaan', key: 'tanggal', width: 25 },
         { header: 'Uraian / Judul', key: 'judul', width: 35 },
         { header: 'Deskripsi', key: 'deskripsi', width: 45 },
-        { header: 'Dokumentasi', key: 'dokumentasi', width: 35 } // Lebar kolom gambar
+        { header: 'Dokumentasi', key: 'dokumentasi', width: 35 }
       ];
 
       worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -309,7 +309,7 @@ const RekapanKegiatan: React.FC = () => {
       didDrawCell: (data) => {
         if (data.section === 'body' && data.column.index === 4) {
            const rowImgs = allRowImages[data.row.index] || [];
-           let currentY = data.cell.y + 2; // Titik awal koordinat Y
+           let currentY = data.cell.y + 2; 
            
            for (const base64Img of rowImgs) {
               if (base64Img && base64Img.startsWith('data:image')) {
@@ -573,14 +573,23 @@ const RekapanKegiatan: React.FC = () => {
               <ChevronLeft size={32} />
             </button>
           )}
-
           <div className="max-w-5xl w-full flex flex-col items-center relative overflow-hidden px-12">
-            <div key={currentPreviewIndex} className="animate-in fade-in zoom-in-95 duration-300 w-full flex justify-center">
+            <div key={currentPreviewIndex} className="animate-in fade-in zoom-in-95 duration-300 w-full flex flex-col items-center justify-center">
               <img 
                 src={getImageUrl(previewImages[currentPreviewIndex])} 
                 alt={`Preview ${currentPreviewIndex + 1}`} 
-                className="max-w-full max-h-[70vh] object-contain rounded-4xl shadow-2xl border border-white/10" 
+                className="max-w-full max-h-[65vh] object-contain rounded-4xl shadow-2xl border border-white/10" 
               />
+              
+              {/* === INDIKATOR NAMA FILE UNTUK DEBUGGING === */}
+              <div className="mt-4 bg-brand-dark/50 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10 text-center">
+                 <p className="text-white font-bold text-sm tracking-wider">
+                    Gambar {currentPreviewIndex + 1} dari {previewImages.length}
+                 </p>
+                 <p className="text-emerald-400 font-mono text-[10px] mt-1 break-all">
+                    Path Asli: {previewImages[currentPreviewIndex]}
+                 </p>
+              </div>
             </div>
 
             {previewImages.length > 1 && (
