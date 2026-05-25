@@ -90,6 +90,29 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     }
   }, [data, isOpen, activeSubTab]); 
 
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDropFile = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const filesArray = Array.from(e.dataTransfer.files);
+      setFormData({...formData, dokumentasi: filesArray});
+      setFileStatus(`${filesArray.length} gambar dipilih`);
+    }
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -242,7 +265,17 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
             {/* INPUT MULTIPLE IMAGES */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Unggah Dokumentasi (Bisa lebih dari 1 gambar)</label>
-              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-300 bg-slate-50 rounded-2xl cursor-pointer hover:bg-brand-primary/5 hover:border-brand-primary transition-all group">
+              <label 
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDropFile}
+                className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-2xl cursor-pointer transition-all group ${
+                  isDragActive 
+                  ? 'border-brand-primary bg-brand-primary/10 scale-[1.01]' 
+                  : 'border-slate-300 bg-slate-50 hover:bg-brand-primary/5 hover:border-brand-primary'
+                }`}
+              >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
                   <div className="w-12 h-12 mb-3 bg-white rounded-full shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                     {formData.dokumentasi.length > 1 ? <Images className="text-brand-primary" size={24} /> : <UploadCloud className="text-brand-primary" size={24} />}
@@ -253,7 +286,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
                   ) : (
                     <>
                       <p className="mb-1 text-sm text-slate-500 font-medium">
-                        <span className="font-bold text-brand-primary">Klik untuk unggah</span> banyak gambar
+                        <span className="font-bold text-brand-primary">Klik atau Tarik ke sini</span> untuk unggah gambar
                       </p>
                       <p className="text-xs text-slate-400">PNG, JPG atau JPEG (Bisa pilih beberapa sekaligus)</p>
                     </>
@@ -275,6 +308,36 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
                   }} 
                 />
               </label>
+
+              {/* Tampilkan Thumbnail Previews */}
+              {formData.dokumentasi.length > 0 && (
+                <div className="mt-4 grid grid-cols-4 gap-3 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
+                  {formData.dokumentasi.map((file, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 bg-white group/thumb shadow-sm">
+                      <img 
+                        src={URL.createObjectURL(file)} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover" 
+                      />
+                      <div className="absolute inset-0 bg-brand-dark/50 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newFiles = [...formData.dokumentasi];
+                            newFiles.splice(idx, 1);
+                            setFormData({...formData, dokumentasi: newFiles});
+                            setFileStatus(newFiles.length > 0 ? `${newFiles.length} gambar dipilih` : null);
+                          }}
+                          className="bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-all cursor-pointer shadow-md"
+                          title="Hapus foto ini"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </form>

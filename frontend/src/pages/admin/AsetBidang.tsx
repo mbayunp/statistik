@@ -5,8 +5,19 @@ import * as XLSX from 'xlsx';
 import { Monitor, Plus, Trash2, Search, X, Inbox, ChevronLeft, ChevronRight, FileSpreadsheet, Box, MapPin, Edit3 } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
+interface AsetItem {
+  id: number;
+  nama_barang: string;
+  jenis_barang: string;
+  merk_model: string;
+  tahun_pembelian: number;
+  jumlah: number;
+  penempatan?: string;
+  keadaan: string;
+}
+
 const AsetBidang: React.FC = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<AsetItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -56,7 +67,7 @@ const AsetBidang: React.FC = () => {
   };
 
   // Fungsi untuk buka modal edit
-  const handleEditClick = (item: any) => {
+  const handleEditClick = (item: AsetItem) => {
     setEditMode(true);
     setCurrentId(item.id);
     setFormData({
@@ -89,8 +100,12 @@ const AsetBidang: React.FC = () => {
       setShowModal(false); 
       setFormData(initialForm);
       fetchData();
-    } catch (err: any) {
-      Swal.fire('Error', err.response?.data?.message || 'Gagal menyimpan data', 'error');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        Swal.fire('Error', err.response?.data?.message || 'Gagal menyimpan data', 'error');
+      } else {
+        Swal.fire('Error', 'Gagal menyimpan data', 'error');
+      }
     }
   };
 
@@ -251,7 +266,7 @@ const AsetBidang: React.FC = () => {
 
       {/* Modal Tambah/Edit */}
       {showModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
+        <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 my-auto">
             <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <div>
@@ -307,7 +322,7 @@ const AsetBidang: React.FC = () => {
                 </div>
 
               </div>
-              <button type="submit" className="w-full mt-8 bg-brand-dark text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-xl hover:bg-blue-500 transition-all active:scale-[0.98]">
+              <button type="submit" className="w-full mt-8 bg-brand-dark text-white py-5 rounded-4xl font-black uppercase text-xs tracking-[0.2em] shadow-xl hover:bg-blue-500 transition-all active:scale-[0.98]">
                 {editMode ? 'Simpan Perubahan' : 'Simpan Aset'}
               </button>
             </form>

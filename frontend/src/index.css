@@ -7,6 +7,48 @@
   --color-white: #FFFFFF;
 }
 
+@variant dark (&:where(.dark, .dark *));
+
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-slate-50 text-slate-900 antialiased transition-colors duration-300;
+}
+
+.dark body {
+  @apply bg-[#001D1E] text-slate-100;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes float-delayed {
+  0%, 100% { transform: translateY(-10px) scale(0.95); }
+  50% { transform: translateY(5px) scale(1.02); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 210, 180, 0.4); border-color: rgba(0, 210, 180, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(0, 210, 180, 0.8); border-color: rgba(0, 210, 180, 0.8); }
+}
+
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 8s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-ticker {
+  animation: ticker 25s linear infinite;
 }

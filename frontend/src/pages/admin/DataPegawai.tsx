@@ -4,8 +4,17 @@ import Swal from 'sweetalert2';
 import { UserPlus, Edit, Trash2, Users, Search, GripVertical } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
+interface Pegawai {
+  id: number;
+  nip?: string;
+  nama: string;
+  jabatan?: string;
+  golongan?: string;
+  urutan?: number;
+}
+
 const DataPegawai: React.FC = () => {
-  const [pegawai, setPegawai] = useState<any[]>([]);
+  const [pegawai, setPegawai] = useState<Pegawai[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -15,6 +24,7 @@ const DataPegawai: React.FC = () => {
   const [formData, setFormData] = useState({ nip: '', nama: '', jabatan: '', golongan: '' });
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
 
   const fetchPegawai = async () => {
     try {
@@ -43,12 +53,13 @@ const DataPegawai: React.FC = () => {
       setShowModal(false);
       setFormData({ nip: '', nama: '', jabatan: '', golongan: '' });
       fetchPegawai();
-    } catch (err: any) {
-      Swal.fire('Error', err.response?.data?.message || 'Terjadi kesalahan', 'error');
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      Swal.fire('Error', axiosError.response?.data?.message || 'Terjadi kesalahan', 'error');
     }
   };
 
-  const handleEdit = (p: any) => {
+  const handleEdit = (p: Pegawai) => {
     setEditMode(true);
     setCurrentId(p.id);
     setFormData({ nip: p.nip || '', nama: p.nama, jabatan: p.jabatan || '', golongan: p.golongan || '' });
@@ -68,7 +79,7 @@ const DataPegawai: React.FC = () => {
           await axios.delete(`${API_BASE_URL}/api/pegawai/${id}`);
           fetchPegawai();
           Swal.fire('Terhapus', '', 'success');
-        } catch (error) {
+        } catch {
           Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus', 'error');
         }
       }
@@ -80,11 +91,13 @@ const DataPegawai: React.FC = () => {
     setDraggedIndex(index);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
+    setDraggedOverIndex(index);
   };
 
   const handleDrop = async (dropIndex: number) => {
+    setDraggedOverIndex(null);
     if (draggedIndex === null || draggedIndex === dropIndex) {
       setDraggedIndex(null);
       return;
@@ -159,13 +172,27 @@ const DataPegawai: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading ? (
-                 <tr><td colSpan={6} className="p-10 text-center font-bold text-slate-400">Memuat...</td></tr>
+                 Array.from({ length: 5 }).map((_, i) => (
+                   <tr key={i} className="animate-pulse">
+                     <td className="p-6 text-center"><div className="w-6 h-6 bg-slate-100 rounded-lg mx-auto" /></td>
+                     <td className="p-6"><div className="w-24 h-4 bg-slate-100 rounded-md" /></td>
+                     <td className="p-6"><div className="w-40 h-4 bg-slate-100 rounded-md" /></td>
+                     <td className="p-6"><div className="w-32 h-4 bg-slate-100 rounded-md" /></td>
+                     <td className="p-6 text-center"><div className="w-10 h-6 bg-slate-100 rounded-lg mx-auto" /></td>
+                     <td className="p-6"><div className="w-16 h-8 bg-slate-100 rounded-xl mx-auto" /></td>
+                   </tr>
+                 ))
               ) : filteredPegawai.map((p, index) => (
                 <tr 
                   key={p.id} 
-                  onDragOver={handleDragOver}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={() => setDraggedOverIndex(null)}
                   onDrop={() => handleDrop(index)}
-                  className={`hover:bg-slate-50/80 transition-colors group ${draggedIndex === index ? 'opacity-40 bg-slate-100' : ''}`}
+                  className={`hover:bg-slate-50/80 transition-all duration-200 group relative ${
+                    draggedIndex === index ? 'opacity-30 bg-slate-100 scale-[0.98] shadow-inner' : ''
+                  } ${
+                    draggedOverIndex === index ? 'border-b-4 border-dashed border-brand-primary bg-brand-primary/5 shadow-lg' : ''
+                  }`}
                 >
                   {/* KOLOM HANDLE: Hanya area ini yang bisa nge-drag baris */}
                   <td className="p-6 text-center text-slate-300">
@@ -199,7 +226,7 @@ const DataPegawai: React.FC = () => {
 
       {/* MODAL FORM TETAP SAMA */}
       {showModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
+        <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl animate-in zoom-in duration-300 overflow-hidden my-auto">
             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">
@@ -240,7 +267,7 @@ const DataPegawai: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <button type="submit" className="w-full bg-brand-dark text-white py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-brand-primary transition-all shadow-xl active:scale-[0.98] mt-4">
+              <button type="submit" className="w-full bg-brand-dark text-white py-5 rounded-4xl font-black text-xs uppercase tracking-[0.2em] hover:bg-brand-primary transition-all shadow-xl active:scale-[0.98] mt-4">
                 {editMode ? 'Simpan Perubahan' : 'Daftarkan Pegawai'}
               </button>
             </form>

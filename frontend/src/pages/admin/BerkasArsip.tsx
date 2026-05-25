@@ -11,9 +11,19 @@ const KATEGORI_BERKAS = [
   "RKA", "DPA", "KAK", "ANGKAS", "KIR", "PERKIN", "IKI", "CASHCADING", "LAINNYA"
 ];
 
+interface BerkasItem {
+  id: number;
+  nama_berkas: string;
+  kategori: string;
+  tahun: number;
+  keterangan?: string;
+  file_arsip: string;
+  created_at?: string;
+}
+
 const BerkasArsip: React.FC = () => {
   // === STATE UTAMA ===
-  const [berkas, setBerkas] = useState<any[]>([]);
+  const [berkas, setBerkas] = useState<BerkasItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [file, setFile] = useState<File | null>(null);
@@ -48,7 +58,10 @@ const BerkasArsip: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchBerkas();
+    const timer = setTimeout(() => {
+      fetchBerkas();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // 2. Handle Submit (Tambah Data)
@@ -72,8 +85,12 @@ const BerkasArsip: React.FC = () => {
       setFile(null);
       setFormData({ nama_berkas: '', kategori: '', tahun: new Date().getFullYear(), keterangan: '' });
       fetchBerkas();
-    } catch (err: any) {
-      Swal.fire('Error', err.response?.data?.message || 'Gagal menyimpan berkas', 'error');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        Swal.fire('Error', err.response?.data?.message || 'Gagal menyimpan berkas', 'error');
+      } else {
+        Swal.fire('Error', 'Gagal menyimpan berkas', 'error');
+      }
     }
   };
 
@@ -93,6 +110,7 @@ const BerkasArsip: React.FC = () => {
           Swal.fire('Terhapus', 'Berkas berhasil dihapus', 'success');
           fetchBerkas();
         } catch (error) {
+          console.error(error);
           Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus', 'error');
         }
       }
@@ -138,7 +156,7 @@ const BerkasArsip: React.FC = () => {
   const currentItems = filteredBerkas.slice(indexOfFirstItem, indexOfLastItem);
 
   // Generate daftar tahun unik untuk dropdown filter
-  const uniqueYears = Array.from(new Set(berkas.map(b => b.tahun))).sort((a: any, b: any) => b - a);
+  const uniqueYears = Array.from(new Set(berkas.map(b => b.tahun))).sort((a: number, b: number) => b - a);
 
   return (
     <div className="p-8 lg:p-10 bg-slate-50 min-h-screen text-left">
@@ -209,7 +227,7 @@ const BerkasArsip: React.FC = () => {
               onChange={(e) => { setFilterTahun(e.target.value); setCurrentPage(1); }}
             >
               <option value="">Semua Tahun</option>
-              {uniqueYears.map((yr: any) => (
+              {uniqueYears.map((yr: number) => (
                  <option key={yr} value={yr}>{yr}</option>
               ))}
             </select>
@@ -335,7 +353,7 @@ const BerkasArsip: React.FC = () => {
 
       {/* MODAL UPLOAD BERKAS TETAP SAMA SEPERTI SEBELUMNYA */}
       {showModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
+        <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
           {/* ... Isi modal form upload sama seperti yang sebelumnya ... */}
            <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 my-auto">
             <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
@@ -381,7 +399,7 @@ const BerkasArsip: React.FC = () => {
 
                 {/* Tahun Anggaran */}
                 <div className="col-span-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 flex items-center gap-1">Tahun Anggaran</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">Tahun Anggaran</label>
                   <input 
                     type="number" 
                     required 
@@ -403,8 +421,8 @@ const BerkasArsip: React.FC = () => {
                 </div>
 
                 {/* File Upload */}
-                <div className="col-span-2 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 border-dashed">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4 flex items-center gap-2">
+                <div className="col-span-2 p-6 bg-slate-50 rounded-4xl border border-slate-100 border-dashed">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <FileText size={16} /> Pilih Dokumen Arsip (PDF/Word/Excel)
                   </label>
                   <input 
@@ -419,7 +437,7 @@ const BerkasArsip: React.FC = () => {
 
               <button 
                 type="submit"
-                className="w-full bg-brand-dark text-white py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs mt-8 hover:bg-brand-secondary transition-all shadow-xl shadow-brand-secondary/20 active:scale-[0.98]"
+                className="w-full bg-brand-dark text-white py-5 rounded-4xl font-black uppercase tracking-[0.2em] text-xs mt-8 hover:bg-brand-secondary transition-all shadow-xl shadow-brand-secondary/20 active:scale-[0.98]"
               >
                 Unggah & Simpan Berkas
               </button>
