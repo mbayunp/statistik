@@ -69,23 +69,35 @@ const RekapanKegiatan: React.FC = () => {
     setTimeout(() => { setCurrentPage(1); }, 0);
   }, [activeSubTab, selectedMonth]);
 
-  // FUNGSI PEMBACA GAMBAR (SUPER KEBAL ERROR)
+  // FUNGSI PEMBACA GAMBAR (SUPER KEBAL ERROR & FLATTENED)
   const parseImages = (imageField: unknown): string[] => {
     if (!imageField) return [];
 
-    let strData = imageField;
+    const strData = imageField;
 
-    if (Array.isArray(strData) && typeof strData[0] === 'string' && strData[0].startsWith('[')) {
-      strData = strData[0];
-    } else if (Array.isArray(strData)) {
-      return strData;
+    if (Array.isArray(strData)) {
+      const flatList: string[] = [];
+      for (const item of strData) {
+        if (typeof item === 'string') {
+          if (item.startsWith('[')) {
+            flatList.push(...parseImages(item));
+          } else {
+            flatList.push(item);
+          }
+        } else if (Array.isArray(item)) {
+          flatList.push(...parseImages(item));
+        } else if (item) {
+          flatList.push(String(item));
+        }
+      }
+      return flatList;
     }
 
     if (typeof strData === 'string') {
       try {
         let parsed = JSON.parse(strData);
         if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return parseImages(parsed);
       } catch { /* ignore */ }
 
       const manualClean = (strData as string).replace(/[[\]"\\]/g, '').trim(); 

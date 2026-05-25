@@ -44,15 +44,35 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
 
       // Logika untuk menampilkan jumlah gambar yang sudah ada saat mode Edit
       if (data.dokumentasi || data.gambar) {
-        let count = 1;
+        let count = 0;
         const imgData = data.dokumentasi || data.gambar;
-        try {
-           const parsed = JSON.parse(imgData);
-           if (Array.isArray(parsed)) count = parsed.length;
-        } catch {
-           if (imgData.includes(',')) count = imgData.split(',').length;
+        if (Array.isArray(imgData)) {
+          count = imgData.length;
+        } else if (typeof imgData === 'string') {
+          try {
+             let parsed = JSON.parse(imgData);
+             if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+             if (Array.isArray(parsed)) {
+               count = parsed.length;
+             } else {
+               count = 1;
+             }
+          } catch {
+             if (imgData.includes(',')) {
+               count = imgData.split(',').length;
+             } else {
+               count = imgData.trim() ? 1 : 0;
+             }
+          }
+        } else if (imgData) {
+          count = 1;
         }
-        setFileStatus(`${count} gambar sudah tersimpan (Abaikan jika tak diubah)`);
+        
+        if (count > 0) {
+          setFileStatus(`${count} gambar sudah tersimpan (Abaikan jika tak diubah)`);
+        } else {
+          setFileStatus(null);
+        }
       } else {
         setFileStatus(null);
       }

@@ -7,8 +7,9 @@ const storage = multer.diskStorage({
         cb(null, './uploads/'); // Pastikan folder 'uploads' sudah ada di root backend
     },
     filename: function (req, file, cb) {
-        // Format: timestamp-namafileasli.ext
-        cb(null, Date.now() + path.extname(file.originalname)); 
+        // Format: timestamp-random.ext
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname)); 
     }
 });
 
