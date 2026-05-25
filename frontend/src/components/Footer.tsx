@@ -24,7 +24,8 @@ const Footer: React.FC = () => {
               />
             </div>
             <p className="text-sm leading-relaxed opacity-70 max-w-md">
-            Bidang Penyelenggaraan Statistik Sektoral merupakan unit kerja pada Dinas Komunikasi dan Informatika Kabupaten Garut yang bertugas mengoordinasikan pengelolaan data sektoral antar perangkat daerah dalam rangka mendukung kebijakan berbasis data.            </p>
+              Bidang Penyelenggaraan Statistik Sektoral merupakan unit kerja pada Dinas Komunikasi dan Informatika Kabupaten Garut yang bertugas mengoordinasikan pengelolaan data sektoral antar perangkat daerah dalam rangka mendukung kebijakan berbasis data.
+            </p>
           </div>
 
           {/* Navigasi Cepat */}
@@ -33,7 +34,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm font-bold">
               <li>
                 <a href="https://satudata.garutkab.go.id/" target="_blank" rel="noreferrer" className="hover:text-brand-primary transition-colors flex items-center gap-2">
-                   Portal Satu Data
+                    Portal Satu Data
                 </a>
               </li>
               <li>
@@ -70,12 +71,18 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Footer */}
-        <div className="border-t border-white/5 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[9px] font-black tracking-[0.3em] uppercase opacity-30">
+        <div className="border-t border-white/5 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] font-black tracking-[0.3em] uppercase opacity-40">
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
             <p>&copy; {new Date().getFullYear()} PEMKAB GARUT</p>
             <p>Dikelola oleh Diskominfo</p>
           </div>
-          <p>Bidang Statistik Sektoral</p>
+          <div className="flex items-center gap-6">
+            <p>Bidang Statistik Sektoral</p>
+            {/* Penambahan Versi Aplikasi */}
+            <span className="bg-white/10 px-2 py-0.5 rounded text-[8px] tracking-[0.1em] text-brand-primary">
+              v1.2
+            </span>
+          </div>
         </div>
       </div>
     </footer>
