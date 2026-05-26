@@ -21,7 +21,7 @@ const ResetPassword: React.FC = () => {
   const handleVerifyPin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE_URL}/auth/verify-pin`, { pin });
+      await axios.post(`${API_BASE_URL}/api/auth/verify-pin`, { pin });
       
       // Jika PIN benar, buka gembok halaman
       setIsUnlocked(true);
@@ -58,7 +58,7 @@ const ResetPassword: React.FC = () => {
 
     try {
       // Mengirimkan username, password baru, dan PIN sebagai validasi akhir
-      await axios.post(`${API_BASE_URL}/auth/reset-password`, { 
+      await axios.post(`${API_BASE_URL}/api/auth/reset-password`, { 
         username, 
         newPassword, 
         pin 

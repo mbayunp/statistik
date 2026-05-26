@@ -20,7 +20,7 @@ const Register: React.FC = () => {
   const handleVerifyPin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE_URL}/auth/verify-pin`, { pin });
+      await axios.post(`${API_BASE_URL}/api/auth/verify-pin`, { pin });
       
       // Jika PIN benar, buka gembok halaman
       setIsUnlocked(true);
@@ -47,7 +47,7 @@ const Register: React.FC = () => {
     e.preventDefault();
     try {
       // Kita tetap mengirimkan pin sebagai keamanan ganda di backend
-      await axios.post(`${API_BASE_URL}/auth/register`, { username, password, pin });
+      await axios.post(`${API_BASE_URL}/api/auth/register`, { username, password, pin });
       
       Swal.fire({
         icon: 'success',
