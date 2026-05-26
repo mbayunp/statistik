@@ -1,15 +1,28 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs'); // Wajib ditambahkan untuk fungsi auto-create folder
 
 // Menentukan lokasi simpan & nama file
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, './uploads/'); // Pastikan folder 'uploads' sudah ada di root backend
+        let destFolder = './uploads/';
+
+        // Dinamis: Arahkan file laporan ke subfolder /laporan/
+        if (file.fieldname === 'file_laporan') {
+            destFolder = './uploads/laporan/';
+        }
+
+        // Auto-create folder jika belum ada agar tidak error saat deploy
+        if (!fs.existsSync(destFolder)) {
+            fs.mkdirSync(destFolder, { recursive: true });
+        }
+
+        cb(null, destFolder);
     },
     filename: function (req, file, cb) {
-        // Format: timestamp-random.ext
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname)); 
+        const prefix = file.fieldname === 'file_laporan' ? 'laporan-' : 'file-';
+        cb(null, prefix + uniqueSuffix + path.extname(file.originalname)); 
     }
 });
 
@@ -34,20 +47,22 @@ const fileFilter = (req, file, cb) => {
             cb(new Error('Berkas Arsip hanya mendukung Gambar, PDF, Word, dan Excel!'), false);
         }
     } 
-    // 2. LAPORAN KEUANGAN
+    // 2. LAPORAN (Keuangan & Tenaga Ahli)
     else if (file.fieldname === 'file_laporan') {
         const allowedLaporanTypes = [
             'application/pdf',
+            'application/msword', // Tambahan izin untuk .doc
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // Tambahan izin untuk .docx
             'application/vnd.ms-excel',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         ];
         if (allowedLaporanTypes.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Laporan Keuangan wajib berformat PDF atau Excel (.xls/.xlsx)!'), false);
+            cb(new Error('Laporan wajib berformat PDF, Word (.doc/.docx), atau Excel (.xls/.xlsx)!'), false);
         }
     }
-    // 3. PENUGASAN (DOKUMENTASI) -> (Blok ini yang tadi posisinya nyasar)
+    // 3. PENUGASAN (DOKUMENTASI)
     else if (file.fieldname === 'dokumentasi') {
         if (imageTypes.includes(file.mimetype)) {
             cb(null, true);
