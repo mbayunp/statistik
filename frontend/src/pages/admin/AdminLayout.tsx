@@ -17,7 +17,8 @@ import {
   Mail,
   Send,
   Monitor,
-  Database
+  Database,
+  FileText // Icon baru untuk laporan
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import logo from '../../assets/images/logo.png';
@@ -45,6 +46,8 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: 'Surat Masuk', path: '/admin/surat/masuk', icon: <Mail size={20} />},
     { name: 'Surat Keluar', path: '/admin/surat/keluar', icon: <Send size={20} /> },
     { name: 'Data Pegawai', path: '/admin/pegawai', icon: <Users size={20} /> },
+    // Menu Baru Ditambahkan Di Sini
+    { name: 'Laporan Tenaga Ahli', path: '/admin/laporan-tenaga-ahli', icon: <FileText size={20} /> }, 
     { name: 'Daftar Kegiatan', path: '/admin/daftar-kegiatan', icon: <Eye size={20} /> },
     { name: 'Berkas Arsip', path: '/admin/berkas-arsip', icon: <Archive size={20} /> },
     { name: 'Kepala Bidang', path: '/admin/penugasan', icon: <ClipboardList size={20} /> },
@@ -166,6 +169,24 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <div className="absolute left-20 bg-brand-dark border border-white/10 text-white text-[10px] font-black tracking-widest px-3 py-2 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-100 shadow-xl">Keuangan</div>
               )}
             </button>
+            
+            {!isCollapsed && (
+              <div className={`grid transition-all duration-300 ease-in-out ${isKeuanganOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
+                <div className="overflow-hidden">
+                  <div className="ml-4 flex flex-col gap-1 border-l border-white/10 pl-2 pb-1">
+                    <Link to="/admin/keuangan/anggaran" className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${location.pathname === '/admin/keuangan/anggaran' ? 'bg-brand-primary text-white font-black' : 'text-slate-500 hover:text-white'}`}>
+                      Realisasi Anggaran
+                    </Link>
+                    <Link to="/admin/keuangan/pengadaan/modal" className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${location.pathname === '/admin/keuangan/pengadaan/modal' ? 'bg-brand-primary text-white font-black' : 'text-slate-500 hover:text-white'}`}>
+                      PBJ Modal
+                    </Link>
+                    <Link to="/admin/keuangan/pengadaan/pegawai" className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${location.pathname === '/admin/keuangan/pengadaan/pegawai' ? 'bg-brand-primary text-white font-black' : 'text-slate-500 hover:text-white'}`}>
+                      PBJ Pegawai
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </nav>
 

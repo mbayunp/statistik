@@ -79,7 +79,7 @@ const Footer: React.FC = () => {
           <div className="flex items-center gap-6">
             <p>Bidang Statistik Sektoral</p>
             {/* Penambahan Versi Aplikasi */}
-            <span className="bg-white/10 px-2 py-0.5 rounded text-[8px] tracking-[0.1em] text-brand-primary">
+            <span className="bg-white/10 px-2 py-0.5 rounded text-[8px] tracking-widest text-brand-primary">
               v1.2
             </span>
           </div>

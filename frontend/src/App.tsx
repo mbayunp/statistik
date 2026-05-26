@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import Beranda from './pages/Beranda';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ResetPassword from './pages/ResetPassword';
 import Tentang from './pages/Tentang';
 import Kegiatan from './pages/Kegiatan';
 
@@ -21,6 +22,7 @@ import KeuanganPage from './pages/admin/KeuanganPage';
 import PenugasanPage from './pages/admin/PenugasanPage';
 import AsetBidang from './pages/admin/AsetBidang';
 import RekapanPermohonan from './pages/admin/RekapanPermohonan';
+import LaporanBulanan from './pages/admin/LaporanBulanan';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -55,6 +57,7 @@ const App: React.FC = () => {
         {/* === GRUP AUTH === */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* === GRUP HALAMAN ADMIN === */}
         <Route 
@@ -83,6 +86,7 @@ const App: React.FC = () => {
           <Route path="penugasan" element={<PenugasanPage />} />
           <Route path="aset" element={<AsetBidang />} />
           <Route path="rekapan-permohonan" element={<RekapanPermohonan />} />
+          <Route path="laporan-tenaga-ahli" element={<LaporanBulanan />} />
 
         </Route>
 

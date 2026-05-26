@@ -73,3 +73,35 @@ exports.verifyPin = (req, res) => {
         return res.status(403).json({ success: false, message: 'PIN Keamanan salah!' });
     }
 };
+
+// Tambahkan fungsi ini di authController.js
+
+exports.resetPasswordViaPin = async (req, res) => {
+    try {
+        const { username, newPassword, pin } = req.body;
+        const SECRET_PIN = process.env.REGISTER_PIN;
+
+        // 1. Validasi PIN (Keamanan Ganda di Backend)
+        if (pin !== SECRET_PIN) {
+            return res.status(403).json({ success: false, message: 'Aksi ditolak: PIN Keamanan salah!' });
+        }
+
+        // 2. Cari user di database
+        const user = await User.findByUsername(username);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Username tidak ditemukan!' });
+        }
+
+        // 3. Enkripsi password baru
+        const salt = await bcrypt.genSalt(10);
+        const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+        // 4. Update ke database (Pastikan method updatePassword ada di userModel.js Anda)
+        await User.updatePassword(username, hashedNewPassword);
+
+        res.status(200).json({ success: true, message: 'Password berhasil direset!' });
+    } catch (error) {
+        console.error('Error reset password:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan pada server' });
+    }
+};

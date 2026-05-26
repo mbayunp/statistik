@@ -26,6 +26,7 @@ const KontakPage: React.FC = () => {
       setStatus({ type: 'success', msg: 'Pesan Anda berhasil dikirim! Admin kami akan segera menghubungi Anda.' });
       setFormData({ nama: '', email: '', subjek: '', pesan: '' });
     } catch (error) {
+      console.error('Error:', error);
       setStatus({ type: 'error', msg: 'Maaf, terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.' });
     } finally {
       setLoading(false);
@@ -200,7 +201,7 @@ const KontakPage: React.FC = () => {
         </div>
 
         {/* AJAKAN KOLABORASI */}
-        <section className="mt-24 bg-gradient-to-r from-brand-primary to-blue-600 rounded-[4rem] p-12 md:p-20 text-white text-center relative overflow-hidden group">
+        <section className="mt-24 bg-linear-to-r from-brand-primary to-blue-600 rounded-[4rem] p-12 md:p-20 text-white text-center relative overflow-hidden group">
           <div className="relative z-10">
             <h2 className="text-3xl md:text-5xl font-black mb-6 uppercase tracking-tighter">Kolaborasi Data untuk Pembangunan</h2>
             <p className="text-blue-100 max-w-2xl mx-auto text-lg mb-10 font-medium">

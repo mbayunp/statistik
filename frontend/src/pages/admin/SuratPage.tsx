@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useParams } from 'react-router-dom';
@@ -20,12 +20,22 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
+interface SuratItem {
+  id: number;
+  nomor_surat: string;
+  instansi: string;
+  tanggal_surat: string;
+  tanggal_terima: string;
+  perihal: string;
+  file_surat?: string;
+}
+
 const SuratPage: React.FC = () => {
   // Ambil parameter 'type' dari URL (isinya 'masuk' atau 'keluar')
   const { type } = useParams<{ type: string }>(); 
   const isMasuk = type === 'masuk'; 
 
-  const [surat, setSurat] = useState<any[]>([]);
+  const [surat, setSurat] = useState<SuratItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +55,7 @@ const SuratPage: React.FC = () => {
   });
 
   // 1. Fungsi Fetch Data (Dinamis berdasarkan type)
-  const fetchSurat = async () => {
+  const fetchSurat = useCallback(async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/api/surat/${type}`);
@@ -55,18 +65,24 @@ const SuratPage: React.FC = () => {
       console.error(err);
       setLoading(false);
     }
-  };
+  }, [type]);
 
   // Render ulang data setiap kali parameter URL berubah (pindah menu masuk <-> keluar)
   useEffect(() => {
-    fetchSurat();
-    setSearchTerm(''); 
-    setCurrentPage(1); // Reset halaman ke 1 saat pindah tipe surat
-  }, [type]); 
+    const timer = setTimeout(() => {
+      fetchSurat();
+      setSearchTerm(''); 
+      setCurrentPage(1); // Reset halaman ke 1 saat pindah tipe surat
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [type, fetchSurat]); 
 
   // Reset halaman ke 1 saat pengguna melakukan pencarian
   useEffect(() => {
-    setCurrentPage(1);
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [searchTerm]);
 
   // 2. Helper Format Tanggal
@@ -100,8 +116,12 @@ const SuratPage: React.FC = () => {
       setFile(null);
       setFormData({ nomor_surat: '', instansi: '', tanggal_surat: '', tanggal_terima: '', perihal: '', keterangan: '' });
       fetchSurat();
-    } catch (err: any) {
-      Swal.fire('Error', err.response?.data?.message || 'Gagal simpan surat', 'error');
+    } catch (err) {
+      let message = 'Gagal simpan surat';
+      if (axios.isAxiosError(err) && err.response?.data?.message) {
+        message = err.response.data.message;
+      }
+      Swal.fire('Error', message, 'error');
     }
   };
 
@@ -120,7 +140,7 @@ const SuratPage: React.FC = () => {
           await axios.delete(`${API_BASE_URL}/api/surat/${id}`);
           Swal.fire('Terhapus', 'Data berhasil dihapus', 'success');
           fetchSurat();
-        } catch (error) {
+        } catch {
           Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus', 'error');
         }
       }
@@ -322,7 +342,7 @@ const SuratPage: React.FC = () => {
 
       {/* === MODAL TAMBAH SURAT === */}
       {showModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
+        <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 my-auto">
             <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <div>
@@ -349,12 +369,12 @@ const SuratPage: React.FC = () => {
                 </div>
 
                 <div className="col-span-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 flex items-center gap-1"><Calendar size={12} /> Tanggal di Surat</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex mb-2 items-center gap-1"><Calendar size={12} /> Tanggal di Surat</label>
                   <input type="date" className="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all text-sm font-bold" value={formData.tanggal_surat} onChange={e => setFormData({...formData, tanggal_surat: e.target.value})} />
                 </div>
 
                 <div className="col-span-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 flex items-center gap-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex mb-2 items-center gap-1">
                     <Calendar size={12} /> {isMasuk ? 'Tanggal Diterima' : 'Tanggal Dikirim'}
                   </label>
                   <input type="date" required className="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all text-sm font-bold" value={formData.tanggal_terima} onChange={e => setFormData({...formData, tanggal_terima: e.target.value})} />
@@ -371,7 +391,7 @@ const SuratPage: React.FC = () => {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-brand-dark text-white py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs mt-8 hover:bg-brand-primary transition-all shadow-xl shadow-brand-primary/20 active:scale-[0.98]">
+              <button type="submit" className="w-full bg-brand-dark text-white py-5 rounded-4xl font-black uppercase tracking-[0.2em] text-xs mt-8 hover:bg-brand-primary transition-all shadow-xl shadow-brand-primary/20 active:scale-[0.98]">
                 Simpan & Arsipkan Surat {type}
               </button>
             </form>

@@ -29,6 +29,7 @@ const BerkasRoutes = require('./routes/berkasRoutes');
 const KeuanganRoutes = require('./routes/keuanganRoutes');
 const penugasanRoutes = require('./routes/penugasanRoutes');
 const asetRoutes = require('./routes/asetRoutes');
+const laporanRoutes = require('./routes/laporanRoutes');
 
 app.use('/api/berkas', BerkasRoutes);
 app.use('/api/kegiatan', kegiatanRoutes);
@@ -40,6 +41,7 @@ app.use('/api/pegawai', pegawaiRoutes);
 app.use('/api/surat', suratRoutes);
 app.use('/api/statistik-sektoral', statistikRoutes);
 app.use('/api/keuangan', KeuanganRoutes);
+app.use('/api/laporan', laporanRoutes);
 
 app.get('/', (req, res) => {
     res.json({ 

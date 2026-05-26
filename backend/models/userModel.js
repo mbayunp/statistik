@@ -13,6 +13,13 @@ const User = {
         const query = 'INSERT INTO users (username, password, role) VALUES (?, ?, "admin")';
         const [result] = await db.execute(query, [username, hashedPassword]);
         return result;
+    }, 
+
+    // Mengupdate password user (Untuk fitur Ganti/Reset Password)
+    updatePassword: async (username, hashedPassword) => {
+        const query = 'UPDATE users SET password = ? WHERE username = ?';
+        const [result] = await db.execute(query, [hashedPassword, username]);
+        return result;
     }
 };
 

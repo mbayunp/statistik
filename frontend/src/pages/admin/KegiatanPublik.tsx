@@ -18,18 +18,27 @@ import {
 import ModalKegiatan from './ModalKegiatan';
 import { API_BASE_URL } from '../../config';
 
+interface KegiatanItem {
+  id: number;
+  tanggal: string;
+  keterangan?: string;
+  nama_kegiatan?: string;
+  gambar?: string;
+  dokumentasi?: string;
+}
+
+const BASE_URL = API_BASE_URL;
+
 const KegiatanPublik: React.FC = () => {
-  const [kegiatan, setKegiatan] = useState<any[]>([]);
+  const [kegiatan, setKegiatan] = useState<KegiatanItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedData, setSelectedData] = useState<any>(null);
+  const [selectedData, setSelectedData] = useState<KegiatanItem | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // State Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
-  const BASE_URL = API_BASE_URL;
 
   // 1. Fungsi Fetch Data
   const fetchKegiatan = useCallback(async () => {
@@ -56,7 +65,7 @@ const KegiatanPublik: React.FC = () => {
   }, [fetchKegiatan]);
 
   // 2. Helper URL Gambar
-  const getImageUrl = (path: string) => {
+  const getImageUrl = (path?: string) => {
     if (!path) return "https://placehold.co/600x400?text=Tanpa+Gambar";
     if (path.startsWith('http')) return path;
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -81,7 +90,7 @@ const KegiatanPublik: React.FC = () => {
           await axios.delete(`${BASE_URL}/api/kegiatan/${id}`);
           Swal.fire({ icon: 'success', title: 'Berhasil!', timer: 1500, showConfirmButton: false });
           fetchKegiatan();
-        } catch (error: any) {
+        } catch {
           Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data.', 'error');
         }
       }
@@ -255,7 +264,7 @@ const KegiatanPublik: React.FC = () => {
       />
 
       {previewImage && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-brand-dark/95 backdrop-blur-md p-6">
+        <div className="fixed inset-0 z-200 flex items-center justify-center bg-brand-dark/95 backdrop-blur-md p-6">
           <button onClick={() => setPreviewImage(null)} className="absolute top-8 right-8 text-white/50 hover:text-white bg-white/10 p-3 rounded-full transition-all"><X size={32} /></button>
           <div className="max-w-4xl w-full flex flex-col items-center animate-in zoom-in duration-300">
             <img src={previewImage} className="max-w-full max-h-[75vh] object-contain rounded-3xl shadow-2xl border border-white/10" alt="Preview" />

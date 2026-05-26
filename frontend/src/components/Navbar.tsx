@@ -40,9 +40,9 @@ const Navbar: React.FC = () => {
         {/* Desktop Menu Items */}
         <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600 dark:text-slate-300">
           <Link to="/" className="hover:text-brand-primary dark:hover:text-brand-primary transition-all">Beranda</Link>
-          <a href="/tentang" className="hover:text-brand-primary dark:hover:text-brand-primary transition-all">Tentang</a>
-          <a href="/kegiatan" className="hover:text-brand-primary dark:hover:text-brand-primary transition-all">Kegiatan</a>
-          <a href="/kontak" className="hover:text-brand-primary dark:hover:text-brand-primary transition-all">Kontak</a>
+          <Link to="/tentang" className="hover:text-brand-primary dark:hover:text-brand-primary transition-all">Tentang</Link>
+          <Link to="/kegiatan" className="hover:text-brand-primary dark:hover:text-brand-primary transition-all">Kegiatan</Link>
+          <Link to="/kontak" className="hover:text-brand-primary dark:hover:text-brand-primary transition-all">Kontak</Link>
           
           {/* Dark Mode Toggle */}
           <button 
@@ -87,9 +87,9 @@ const Navbar: React.FC = () => {
       `}>
         <div className="flex flex-col px-6 gap-4">
           <Link to="/" onClick={toggleMenu} className="text-lg font-bold text-slate-700 dark:text-slate-200 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl">Beranda</Link>
-          <a href="/tentang" onClick={toggleMenu} className="text-lg font-bold text-slate-700 dark:text-slate-200 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl">Tentang</a>
-          <a href="/kegiatan" onClick={toggleMenu} className="text-lg font-bold text-slate-700 dark:text-slate-200 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl">Kegiatan</a>
-          <a href="/kontak" onClick={toggleMenu} className="text-lg font-bold text-slate-700 dark:text-slate-200 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl">Kontak</a>
+          <Link to="/tentang" onClick={toggleMenu} className="text-lg font-bold text-slate-700 dark:text-slate-200 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl">Tentang</Link>
+          <Link to="/kegiatan" onClick={toggleMenu} className="text-lg font-bold text-slate-700 dark:text-slate-200 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl">Kegiatan</Link>
+          <Link to="/kontak" onClick={toggleMenu} className="text-lg font-bold text-slate-700 dark:text-slate-200 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl">Kontak</Link>
           
           <div className="h-px bg-slate-100 dark:bg-white/5 my-2"></div>
           

@@ -10,4 +10,6 @@ router.post('/login', authController.login);
 
 router.post('/verify-pin', authController.verifyPin);
 
+router.post('/reset-password', authController.resetPasswordViaPin);
+
 module.exports = router;
