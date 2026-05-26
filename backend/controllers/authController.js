@@ -62,10 +62,8 @@ exports.login = async (req, res) => {
 
 exports.verifyPin = (req, res) => {
     const { pin } = req.body;
-    const SECRET_PIN = process.env.REGISTER_PIN;
-
-    console.log("PIN dari Frontend:", pin);
-    console.log("PIN dari .env lokal:", SECRET_PIN);
+    // Tambahkan .trim() untuk menghindari error spasi tersembunyi
+    const SECRET_PIN = process.env.REGISTER_PIN ? process.env.REGISTER_PIN.trim() : null;
 
     if (pin === SECRET_PIN) {
         return res.status(200).json({ success: true, message: 'PIN Valid, akses dibuka.' });
@@ -74,12 +72,11 @@ exports.verifyPin = (req, res) => {
     }
 };
 
-// Tambahkan fungsi ini di authController.js
-
 exports.resetPasswordViaPin = async (req, res) => {
     try {
         const { username, newPassword, pin } = req.body;
-        const SECRET_PIN = process.env.REGISTER_PIN;
+        // Tambahkan .trim() juga di sini
+        const SECRET_PIN = process.env.REGISTER_PIN ? process.env.REGISTER_PIN.trim() : null;
 
         // 1. Validasi PIN (Keamanan Ganda di Backend)
         if (pin !== SECRET_PIN) {
@@ -96,7 +93,7 @@ exports.resetPasswordViaPin = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedNewPassword = await bcrypt.hash(newPassword, salt);
 
-        // 4. Update ke database (Pastikan method updatePassword ada di userModel.js Anda)
+        // 4. Update ke database
         await User.updatePassword(username, hashedNewPassword);
 
         res.status(200).json({ success: true, message: 'Password berhasil direset!' });
