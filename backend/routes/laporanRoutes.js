@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middlewares/upload'); // Sesuaikan path dengan lokasi upload.js Anda
+const upload = require('../middleware/upload');
 const laporanController = require('../controllers/laporanController');
 
 // Route menggunakan upload global
