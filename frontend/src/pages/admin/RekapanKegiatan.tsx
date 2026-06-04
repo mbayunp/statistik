@@ -18,7 +18,8 @@ import {
   ChevronRight,
   ArrowUpDown,
   Filter,
-  Images 
+  Images,
+  Link as LinkIcon
 } from 'lucide-react';
 import ModalRekapan from './ModalRekapan';
 import { API_BASE_URL } from '../../config';
@@ -36,7 +37,6 @@ const RekapanKegiatan: React.FC = () => {
   const [selectedData, setSelectedData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
-  // STATE UNTUK SLIDER GAMBAR MULTIPLE
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
 
@@ -69,7 +69,6 @@ const RekapanKegiatan: React.FC = () => {
     setTimeout(() => { setCurrentPage(1); }, 0);
   }, [activeSubTab, selectedMonth]);
 
-  // FUNGSI PEMBACA GAMBAR (SUPER KEBAL ERROR & FLATTENED)
   const parseImages = (imageField: unknown): string[] => {
     if (!imageField) return [];
 
@@ -110,7 +109,6 @@ const RekapanKegiatan: React.FC = () => {
     return [];
   };
 
-  // FUNGSI PEMBENTUK URL YANG AMAN
   const getImageUrl = (path: string) => {
     if (!path) return "https://placehold.co/600x400?text=Tanpa+Gambar";
     if (path.startsWith('http')) return path;
@@ -206,6 +204,7 @@ const RekapanKegiatan: React.FC = () => {
         { header: 'Tanggal Pelaksanaan', key: 'tanggal', width: 25 },
         { header: 'Uraian / Judul', key: 'judul', width: 35 },
         { header: 'Deskripsi', key: 'deskripsi', width: 45 },
+        { header: 'Link Materi', key: 'link', width: 40 }, // FIELD BARU
         { header: 'Dokumentasi', key: 'dokumentasi', width: 35 }
       ];
 
@@ -220,7 +219,8 @@ const RekapanKegiatan: React.FC = () => {
           no: i + 1,
           tanggal: formatTanggalKalender(item.tanggal),
           judul: item.nama_kegiatan || "Tanpa Judul",
-          deskripsi: item.keterangan || "-"
+          deskripsi: item.keterangan || "-",
+          link: item.link_materi || "-" // FIELD BARU
         });
         row.alignment = { vertical: 'top', wrapText: true };
 
@@ -240,7 +240,7 @@ const RekapanKegiatan: React.FC = () => {
                  });
 
                  worksheet.addImage(imageId, {
-                    tl: { col: 4.1, row: i + 1 + (imgIndex * 0.9) }, 
+                    tl: { col: 5.1, row: i + 1 + (imgIndex * 0.9) }, // Geser kolom untuk gambar karena ada link
                     ext: { width: 140, height: 80 }
                  });
               }
@@ -291,18 +291,22 @@ const RekapanKegiatan: React.FC = () => {
       }
       allRowImages.push(rowBase64s);
       
+      // Menggabungkan keterangan dan link ke dalam satu sel di PDF agar tidak penuh
+      let deskripsiPDF = item.keterangan || "-";
+      if (item.link_materi) deskripsiPDF += `\n\nLampiran: ${item.link_materi}`;
+
       tableData.push([
         i + 1, 
         formatTanggalKalender(item.tanggal), 
         item.nama_kegiatan || "Tanpa Judul",
-        item.keterangan || "-",
+        deskripsiPDF,
         '' 
       ]);
     }
 
     autoTable(doc, { 
       startY: 32, 
-      head: [['No', 'Tanggal', 'Judul / Uraian', 'Deskripsi', 'Dokumentasi']], 
+      head: [['No', 'Tanggal', 'Judul / Uraian', 'Deskripsi & Link', 'Dokumentasi']], 
       body: tableData,
       headStyles: { fillColor: [0, 150, 136], halign: 'center' },
       columnStyles: {
@@ -351,7 +355,6 @@ const RekapanKegiatan: React.FC = () => {
     }
   };
 
-  // FUNGSI NAVIGASI SLIDER
   const nextImage = () => setCurrentPreviewIndex((prev) => (prev + 1) % previewImages.length);
   const prevImage = () => setCurrentPreviewIndex((prev) => (prev - 1 + previewImages.length) % previewImages.length);
 
@@ -390,7 +393,6 @@ const RekapanKegiatan: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap justify-end mb-6 gap-3">
-          
           <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
              <Filter size={14} className="text-slate-400" />
              <span className="text-[10px] font-black text-slate-400 uppercase">Bulan:</span>
@@ -451,6 +453,7 @@ const RekapanKegiatan: React.FC = () => {
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-36">Tanggal</th>
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-[25%]">Uraian / Judul</th>
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-[30%]">Deskripsi</th>
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-32">Materi / Lampiran</th> {/* KOLOM BARU */}
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-48 text-center">Dokumentasi</th>
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-24 text-center">Aksi</th>
                 </tr>
@@ -458,7 +461,7 @@ const RekapanKegiatan: React.FC = () => {
               <tbody className="divide-y divide-slate-50">
                 {loading ? (
                    <tr>
-                     <td colSpan={6} className="p-20 text-center">
+                     <td colSpan={7} className="p-20 text-center">
                         <Loader2 className="animate-spin mx-auto text-brand-primary" size={40} />
                         <p className="mt-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Memuat Data...</p>
                      </td>
@@ -466,7 +469,6 @@ const RekapanKegiatan: React.FC = () => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ) : currentItems.length > 0 ? currentItems.map((item: any, index: number) => {
                   
-                  // MENGURAI DATA GAMBAR UNTUK SETIAP BARIS
                   const images = parseImages(item.gambar || item.dokumentasi);
                   const displayImageUrl = images.length > 0 ? getImageUrl(images[0]) : "https://placehold.co/600x400?text=Tanpa+Gambar";
 
@@ -489,6 +491,22 @@ const RekapanKegiatan: React.FC = () => {
                         {item.keterangan || <span className="italic opacity-50">Tanpa Deskripsi</span>}
                       </td>
 
+                      {/* KOLOM LINK MATERI */}
+                      <td className="p-6 align-top">
+                        {item.link_materi ? (
+                          <a 
+                            href={item.link_materi} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-[10px] font-black text-brand-primary bg-brand-primary/10 px-3 py-2 rounded-xl hover:bg-brand-primary hover:text-white transition-all w-fit uppercase tracking-widest"
+                          >
+                            <LinkIcon size={12} /> Buka Link
+                          </a>
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">Tidak ada</span>
+                        )}
+                      </td>
+
                       <td className="p-6 align-top text-center">
                         <div 
                           onClick={() => {
@@ -506,7 +524,6 @@ const RekapanKegiatan: React.FC = () => {
                                onError={(e) => { e.currentTarget.src = "https://placehold.co/400x300?text=Error+Loading+Image"; }}
                             />
                             
-                            {/* BADGE MULTIPLE IMAGES */}
                             {images.length > 1 && (
                               <div className="absolute top-2 right-2 bg-brand-dark/80 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-lg border border-white/20 shadow-lg flex items-center gap-1 z-10">
                                 <Images size={12} /> +{images.length - 1}
@@ -529,7 +546,7 @@ const RekapanKegiatan: React.FC = () => {
                   )
                 }) : (
                   <tr>
-                    <td colSpan={6} className="py-24 text-center">
+                    <td colSpan={7} className="py-24 text-center">
                        <Search className="mx-auto mb-4 text-slate-200" size={56} />
                        <p className="text-sm font-black text-slate-300 uppercase tracking-[0.2em]">Data Tidak Ditemukan</p>
                     </td>
@@ -596,10 +613,10 @@ const RekapanKegiatan: React.FC = () => {
               {/* === INDIKATOR NAMA FILE UNTUK DEBUGGING === */}
               <div className="mt-4 bg-brand-dark/50 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10 text-center">
                  <p className="text-white font-bold text-sm tracking-wider">
-                    Gambar {currentPreviewIndex + 1} dari {previewImages.length}
+                   Gambar {currentPreviewIndex + 1} dari {previewImages.length}
                  </p>
                  <p className="text-emerald-400 font-mono text-[10px] mt-1 break-all">
-                    Path Asli: {previewImages[currentPreviewIndex]}
+                   Path Asli: {previewImages[currentPreviewIndex]}
                  </p>
               </div>
             </div>

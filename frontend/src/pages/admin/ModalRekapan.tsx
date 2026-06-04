@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { X, Calendar, FileText, Tag, UploadCloud, Loader2, AlignLeft, Images } from 'lucide-react';
+import { X, Calendar, FileText, Tag, UploadCloud, Loader2, AlignLeft, Images, Link as LinkIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { API_BASE_URL } from '../../config';
 
@@ -24,9 +24,10 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     tanggal: '',
     nama_kegiatan: '',
     keterangan: '',
+    link_materi: '', // FIELD BARU
     tipe: 'bulanan',
     kategori: activeSubTab,
-    dokumentasi: [] as File[] // SEKARANG BERUPA ARRAY OF FILES
+    dokumentasi: [] as File[] 
   });
 
   useEffect(() => {
@@ -37,12 +38,12 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
         tanggal: formattedDate,
         nama_kegiatan: data.nama_kegiatan || '',
         keterangan: data.keterangan || '',
+        link_materi: data.link_materi || '', // FIELD BARU
         tipe: data.tipe || 'bulanan',
         kategori: data.kategori || activeSubTab, 
         dokumentasi: [] 
       });
 
-      // Logika untuk menampilkan jumlah gambar yang sudah ada saat mode Edit
       if (data.dokumentasi || data.gambar) {
         let count = 0;
         const imgData = data.dokumentasi || data.gambar;
@@ -82,6 +83,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
         tanggal: '', 
         nama_kegiatan: '', 
         keterangan: '', 
+        link_materi: '', // FIELD BARU
         tipe: 'bulanan', 
         kategori: activeSubTab, 
         dokumentasi: []
@@ -118,7 +120,6 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validasi: Wajib unggah saat tambah data baru
     if (formData.dokumentasi.length === 0 && !data) {
       Swal.fire('Peringatan', 'Minimal 1 dokumentasi (gambar) wajib diunggah!', 'warning');
       return;
@@ -129,10 +130,10 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     formPayload.append('tanggal', formData.tanggal);
     formPayload.append('nama_kegiatan', formData.nama_kegiatan);
     formPayload.append('keterangan', formData.keterangan); 
+    formPayload.append('link_materi', formData.link_materi); // FIELD BARU
     formPayload.append('tipe', formData.tipe);
     formPayload.append('kategori', formData.kategori);
     
-    // LOOPING UNTUK MENGIRIM MULTIPLE FILES DENGAN FIELD NAME YANG SAMA
     if (formData.dokumentasi.length > 0) {
       formData.dokumentasi.forEach((file) => {
         formPayload.append('dokumentasi', file);
@@ -240,6 +241,22 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
               </div>
             </div>
 
+            {/* Input Link Materi */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Link Materi / Lampiran (Opsional)</label>
+              <div className="relative group">
+                <LinkIcon className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-brand-primary transition-colors" size={20} />
+                <input 
+                  type="url"
+                  placeholder="https://drive.google.com/... atau link zoom" 
+                  className="w-full p-3.5 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary transition-all text-blue-600 font-medium"
+                  onChange={(e) => setFormData({...formData, link_materi: e.target.value})} 
+                  value={formData.link_materi}
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1 ml-2">*Gunakan format https://</p>
+            </div>
+
             {/* Input Kategori */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Kategori Sektoral</label>
@@ -294,7 +311,6 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
                   )}
                 </div>
                 
-                {/* TAMBAHAN PROPERTI MULTIPLE */}
                 <input 
                   type="file" 
                   multiple 
@@ -310,7 +326,6 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
                 />
               </label>
 
-              {/* Tampilkan Thumbnail Previews */}
               {formData.dokumentasi.length > 0 && (
                 <div className="mt-4 grid grid-cols-4 gap-3 border border-slate-100 rounded-2xl p-4 bg-slate-50/50">
                   {formData.dokumentasi.map((file, idx) => (
@@ -349,7 +364,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
             type="submit" 
             form="formKegiatan"
             disabled={isLoading}
-            className="w-full bg-linear-to-r from-brand-primary to-brand-secondary text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/40 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/40 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <><Loader2 className="animate-spin" size={20} /> MENYIMPAN DATA...</>
