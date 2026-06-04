@@ -33,7 +33,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const rekapanCategories = [
     "PENGELOLAAN PORTAL", "PENGEMBANGAN FRONTEND", "PENGEMBANGAN BACKEND", 
-    "ADMINISTRASI", "FGD/RAPAT/UNDANGAN", "MANAJEMEN DATA", "METADATA" , "INFOGRAFIS"
+    "ADMINISTRASI", "FGD/RAPAT/UNDANGAN", "MANAJEMEN DATA", "METADATA", "INFOGRAFIS", "ZOOM"
   ];
 
   const topMenu = [

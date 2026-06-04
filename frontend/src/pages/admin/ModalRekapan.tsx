@@ -258,6 +258,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
                   <option value="MANAJEMEN DATA">MANAJEMEN DATA</option>
                   <option value="METADATA">METADATA</option>
                   <option value="INFOGRAFIS">INFOGRAFIS</option>
+                  <option value="ZOOM">ZOOM</option>
                 </select>
               </div>
             </div>
