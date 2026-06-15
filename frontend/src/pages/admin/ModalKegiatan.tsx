@@ -4,11 +4,20 @@ import Swal from 'sweetalert2';
 import { X, Upload, Calendar, FileText, Image as ImageIcon } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
+interface Kegiatan {
+  id: string | number;
+  tanggal?: string;
+  keterangan?: string;
+  nama_kegiatan?: string;
+  gambar?: string;
+  dokumentasi?: string;
+}
+
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRefresh: () => void;
-  data?: any; 
+  data?: Kegiatan | null; 
 }
 
 const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data }) => {
@@ -96,13 +105,21 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
         Swal.fire('Gagal', 'Respon server tidak valid.', 'error');
       }
 
-    } catch (error: any) {
+    } catch (error) {
       console.error("Upload Error:", error);
+      
+      let message = 'Koneksi ke server terputus atau backend mengalami error.';
+      if (axios.isAxiosError(error)) {
+        const responseData = error.response?.data as { message?: string } | undefined;
+        if (responseData?.message) {
+          message = responseData.message;
+        }
+      }
       
       Swal.fire({
         icon: 'error',
         title: 'Gagal Memproses',
-        text: error.response?.data?.message || 'Koneksi ke server terputus atau backend mengalami error.'
+        text: message
       });
     } finally {
       // 6. Matikan loading apa pun yang terjadi (Sukses/Gagal)
@@ -111,7 +128,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left">
+    <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left">
       <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
         <div className="flex justify-between items-center p-8 border-b border-slate-100">
           <h2 className="text-2xl font-black text-brand-dark uppercase tracking-tight">
@@ -158,7 +175,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
             </label>
             <div className={`relative ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
               <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="upload-foto" />
-              <label htmlFor="upload-foto" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-200 rounded-[2rem] cursor-pointer hover:bg-slate-50 transition-all overflow-hidden">
+              <label htmlFor="upload-foto" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-200 rounded-4xl cursor-pointer hover:bg-slate-50 transition-all overflow-hidden">
                 {preview ? (
                   <img src={preview} className="w-full h-full object-cover" alt="Preview" />
                 ) : (

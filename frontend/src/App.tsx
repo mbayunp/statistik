@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
 import Tentang from './pages/Tentang';
 import Kegiatan from './pages/Kegiatan';
+import PublicForm from './pages/PublicForm';
 
 import Dashboard from './pages/admin/Dashboard';
 import RekapanKegiatan from './pages/admin/RekapanKegiatan';
@@ -23,6 +24,9 @@ import PenugasanPage from './pages/admin/PenugasanPage';
 import AsetBidang from './pages/admin/AsetBidang';
 import RekapanPermohonan from './pages/admin/RekapanPermohonan';
 import LaporanBulanan from './pages/admin/LaporanBulanan';
+import FormulirList from './pages/admin/FormulirList';
+import FormBuilder from './pages/admin/FormBuilder';
+import FormulirResponses from './pages/admin/FormulirResponses';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -52,6 +56,7 @@ const App: React.FC = () => {
           <Route path="/tentang" element={<Tentang />} />
           <Route path="/kegiatan" element={<Kegiatan />} />
           <Route path="/kontak" element={<Kontak />} />
+          <Route path="/form/:slug" element={<PublicForm />} />
         </Route>
 
         {/* === GRUP AUTH === */}
@@ -87,6 +92,9 @@ const App: React.FC = () => {
           <Route path="aset" element={<AsetBidang />} />
           <Route path="rekapan-permohonan" element={<RekapanPermohonan />} />
           <Route path="laporan-tenaga-ahli" element={<LaporanBulanan />} />
+          <Route path="formulir" element={<FormulirList />} />
+          <Route path="formulir/builder" element={<FormBuilder />} />
+          <Route path="formulir/responses/:formId" element={<FormulirResponses />} />
 
         </Route>
 

@@ -364,7 +364,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
             type="submit" 
             form="formKegiatan"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/40 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-linear-to-r from-brand-primary to-brand-secondary text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/40 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <><Loader2 className="animate-spin" size={20} /> MENYIMPAN DATA...</>
