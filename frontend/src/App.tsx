@@ -9,6 +9,7 @@ import ResetPassword from './pages/ResetPassword';
 import Tentang from './pages/Tentang';
 import Kegiatan from './pages/Kegiatan';
 import PublicForm from './pages/PublicForm';
+import LinkRedirect from './pages/LinkRedirect';
 
 import Dashboard from './pages/admin/Dashboard';
 import RekapanKegiatan from './pages/admin/RekapanKegiatan';
@@ -27,6 +28,8 @@ import LaporanBulanan from './pages/admin/LaporanBulanan';
 import FormulirList from './pages/admin/FormulirList';
 import FormBuilder from './pages/admin/FormBuilder';
 import FormulirResponses from './pages/admin/FormulirResponses';
+import ShortlinkList from './pages/admin/ShortlinkList';
+
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -57,6 +60,8 @@ const App: React.FC = () => {
           <Route path="/kegiatan" element={<Kegiatan />} />
           <Route path="/kontak" element={<Kontak />} />
           <Route path="/form/:slug" element={<PublicForm />} />
+          <Route path="/:code" element={<LinkRedirect />} />
+
         </Route>
 
         {/* === GRUP AUTH === */}
@@ -95,6 +100,7 @@ const App: React.FC = () => {
           <Route path="formulir" element={<FormulirList />} />
           <Route path="formulir/builder" element={<FormBuilder />} />
           <Route path="formulir/responses/:formId" element={<FormulirResponses />} />
+          <Route path="shortlinks" element={<ShortlinkList />} />
 
         </Route>
 

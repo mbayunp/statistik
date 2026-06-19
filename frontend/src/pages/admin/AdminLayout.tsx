@@ -19,7 +19,8 @@ import {
   Monitor,
   Database,
   FileText,
-  ListChecks // Ikon baru untuk Form Builder
+  ListChecks,
+  Link as LinkIcon // Ikon baru untuk Shortlink (dialias agar tidak bentrok dengan Link dari react-router-dom)
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import logo from '../../assets/images/logo.png';
@@ -48,6 +49,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: 'Surat Keluar', path: '/admin/surat/keluar', icon: <Send size={20} /> },
     { name: 'Data Pegawai', path: '/admin/pegawai', icon: <Users size={20} /> },
     { name: 'Pembuat Formulir', path: '/admin/formulir', icon: <ListChecks size={20} /> },
+    { name: 'Tautan Pendek', path: '/admin/shortlinks', icon: <LinkIcon size={20} /> },
     { name: 'Laporan Tenaga Ahli', path: '/admin/laporan-tenaga-ahli', icon: <FileText size={20} /> }, 
     { name: 'Daftar Kegiatan', path: '/admin/daftar-kegiatan', icon: <Eye size={20} /> },
     { name: 'Berkas Arsip', path: '/admin/berkas-arsip', icon: <Archive size={20} /> },

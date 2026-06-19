@@ -31,6 +31,7 @@ const penugasanRoutes = require('./routes/penugasanRoutes');
 const asetRoutes = require('./routes/asetRoutes');
 const laporanRoutes = require('./routes/laporanRoutes');
 const formRoutes = require('./routes/formRoutes');
+const linkRoutes = require('./routes/linkRoutes');
 
 app.use('/api/berkas', BerkasRoutes);
 app.use('/api/kegiatan', kegiatanRoutes);
@@ -44,6 +45,7 @@ app.use('/api/statistik-sektoral', statistikRoutes);
 app.use('/api/keuangan', KeuanganRoutes);
 app.use('/api/laporan', laporanRoutes);
 app.use('/api/formulir', formRoutes);
+app.use('/api/links', linkRoutes);
 
 app.get('/', (req, res) => {
     res.json({ 
