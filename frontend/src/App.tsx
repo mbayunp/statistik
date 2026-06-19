@@ -60,8 +60,7 @@ const App: React.FC = () => {
           <Route path="/kegiatan" element={<Kegiatan />} />
           <Route path="/kontak" element={<Kontak />} />
           <Route path="/form/:slug" element={<PublicForm />} />
-          <Route path="/:code" element={<LinkRedirect />} />
-
+          <Route path="/s/:code" element={<LinkRedirect />} />
         </Route>
 
         {/* === GRUP AUTH === */}
@@ -100,8 +99,7 @@ const App: React.FC = () => {
           <Route path="formulir" element={<FormulirList />} />
           <Route path="formulir/builder" element={<FormBuilder />} />
           <Route path="formulir/responses/:formId" element={<FormulirResponses />} />
-          <Route path="shortlinks" element={<ShortlinkList />} />
-
+          <Route path="tautan" element={<ShortlinkList />} />
         </Route>
 
         {/* 404 - Page Not Found */}
