@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { UserPlus, Edit, Trash2, Users, Search, GripVertical } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Users, Search, GripVertical, Inbox } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
 interface Pegawai {
@@ -139,7 +139,7 @@ const DataPegawai: React.FC = () => {
           
           <button 
             onClick={() => { setEditMode(false); setFormData({nip:'', nama:'', jabatan:'', golongan:''}); setShowModal(true); }}
-            className="bg-brand-dark text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary transition-all shadow-xl active:scale-95"
+            className="bg-brand-dark text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary transition-all shadow-xl hover-lift active-shrink cursor-pointer"
           >
             <UserPlus size={20} /> Tambah Pegawai
           </button>
@@ -159,68 +159,151 @@ const DataPegawai: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <th className="p-6 w-12 text-center">Handle</th>
-                <th className="p-6">NIP</th>
-                <th className="p-6">Nama Pegawai</th>
-                <th className="p-6">Jabatan</th>
-                <th className="p-6 text-center">Gol</th>
-                <th className="p-6 text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {loading ? (
-                 Array.from({ length: 5 }).map((_, i) => (
-                   <tr key={i} className="animate-pulse">
-                     <td className="p-6 text-center"><div className="w-6 h-6 bg-slate-100 rounded-lg mx-auto" /></td>
-                     <td className="p-6"><div className="w-24 h-4 bg-slate-100 rounded-md" /></td>
-                     <td className="p-6"><div className="w-40 h-4 bg-slate-100 rounded-md" /></td>
-                     <td className="p-6"><div className="w-32 h-4 bg-slate-100 rounded-md" /></td>
-                     <td className="p-6 text-center"><div className="w-10 h-6 bg-slate-100 rounded-lg mx-auto" /></td>
-                     <td className="p-6"><div className="w-16 h-8 bg-slate-100 rounded-xl mx-auto" /></td>
-                   </tr>
-                 ))
-              ) : filteredPegawai.map((p, index) => (
-                <tr 
+          
+          {/* Versi Desktop (Tabel) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <th className="p-6 w-12 text-center">Handle</th>
+                  <th className="p-6">NIP</th>
+                  <th className="p-6">Nama Pegawai</th>
+                  <th className="p-6">Jabatan</th>
+                  <th className="p-6 text-center">Gol</th>
+                  <th className="p-6 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {loading ? (
+                   Array.from({ length: 5 }).map((_, i) => (
+                     <tr key={i} className="animate-pulse">
+                       <td className="p-6 text-center"><div className="w-6 h-6 bg-slate-100 rounded-lg mx-auto" /></td>
+                       <td className="p-6"><div className="w-24 h-4 bg-slate-100 rounded-md" /></td>
+                       <td className="p-6"><div className="w-40 h-4 bg-slate-100 rounded-md" /></td>
+                       <td className="p-6"><div className="w-32 h-4 bg-slate-100 rounded-md" /></td>
+                       <td className="p-6 text-center"><div className="w-10 h-6 bg-slate-100 rounded-lg mx-auto" /></td>
+                       <td className="p-6"><div className="w-16 h-8 bg-slate-100 rounded-xl mx-auto" /></td>
+                     </tr>
+                   ))
+                ) : filteredPegawai.map((p, index) => (
+                  <tr 
+                    key={p.id} 
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={() => setDraggedOverIndex(null)}
+                    onDrop={() => handleDrop(index)}
+                    className={`hover:bg-slate-50/80 transition-all duration-200 group relative ${
+                      draggedIndex === index ? 'opacity-30 bg-slate-100 scale-[0.98] shadow-inner' : ''
+                    } ${
+                      draggedOverIndex === index ? 'border-b-4 border-dashed border-brand-primary bg-brand-primary/5 shadow-lg' : ''
+                    }`}
+                  >
+                    {/* KOLOM HANDLE: area drag baris */}
+                    <td className="p-6 text-center text-slate-300">
+                      <div
+                        draggable={searchTerm === ''}
+                        onDragStart={() => handleDragStart(index)}
+                        className={`cursor-grab active:cursor-grabbing p-2 rounded-lg hover:bg-slate-100 hover:text-brand-primary inline-flex items-center justify-center transition-all ${searchTerm !== '' ? 'opacity-20 cursor-not-allowed' : ''}`}
+                        title={searchTerm !== '' ? "Matikan pencarian untuk mengatur urutan" : "Tarik untuk mengatur urutan"}
+                      >
+                        <GripVertical size={20} />
+                      </div>
+                    </td>
+
+                    {/* KOLOM DATA */}
+                    <td className="p-6 font-mono text-xs text-slate-500 font-bold select-text">{p.nip || '-'}</td>
+                    <td className="p-6 font-bold text-slate-800 text-sm select-text">{p.nama}</td>
+                    <td className="p-6 text-sm font-medium text-slate-600 select-text">{p.jabatan || '-'}</td>
+                    <td className="p-6 text-center"><span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider">{p.golongan || '-'}</span></td>
+                    <td className="p-6">
+                      <div className="flex justify-center gap-2">
+                        <button onClick={() => handleEdit(p)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all"><Edit size={18} /></button>
+                        <button onClick={() => handleDelete(p.id)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"><Trash2 size={18} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Versi Mobile (Card List) */}
+          <div className="block md:hidden divide-y divide-slate-100">
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="p-6 space-y-4 animate-pulse">
+                  <div className="flex justify-between items-center"><div className="w-10 h-10 bg-slate-100 rounded-xl"></div><div className="w-20 h-4 bg-slate-100 rounded"></div></div>
+                  <div className="h-10 bg-slate-100 rounded-2xl"></div>
+                </div>
+              ))
+            ) : filteredPegawai.length > 0 ? (
+              filteredPegawai.map((p, index) => (
+                <div 
                   key={p.id} 
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragLeave={() => setDraggedOverIndex(null)}
                   onDrop={() => handleDrop(index)}
-                  className={`hover:bg-slate-50/80 transition-all duration-200 group relative ${
-                    draggedIndex === index ? 'opacity-30 bg-slate-100 scale-[0.98] shadow-inner' : ''
+                  className={`p-6 space-y-4 text-left relative transition-all duration-200 ${
+                    draggedIndex === index ? 'opacity-30 bg-slate-100 scale-[0.98]' : ''
                   } ${
                     draggedOverIndex === index ? 'border-b-4 border-dashed border-brand-primary bg-brand-primary/5 shadow-lg' : ''
                   }`}
                 >
-                  {/* KOLOM HANDLE: Hanya area ini yang bisa nge-drag baris */}
-                  <td className="p-6 text-center text-slate-300">
-                    <div
-                      draggable={searchTerm === ''}
-                      onDragStart={() => handleDragStart(index)}
-                      className={`cursor-grab active:cursor-grabbing p-2 rounded-lg hover:bg-slate-100 hover:text-brand-primary inline-flex items-center justify-center transition-all ${searchTerm !== '' ? 'opacity-20 cursor-not-allowed' : ''}`}
-                      title={searchTerm !== '' ? "Matikan pencarian untuk mengatur urutan" : "Tarik untuk mengatur urutan"}
-                    >
-                      <GripVertical size={20} />
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-center gap-3">
+                      {/* Reordering Handle */}
+                      <div
+                        draggable={searchTerm === ''}
+                        onDragStart={() => handleDragStart(index)}
+                        className={`cursor-grab active:cursor-grabbing p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-brand-primary inline-flex items-center justify-center transition-all ${searchTerm !== '' ? 'opacity-20 cursor-not-allowed' : ''}`}
+                        title={searchTerm !== '' ? "Matikan pencarian untuk mengatur urutan" : "Tarik untuk mengatur urutan"}
+                      >
+                        <GripVertical size={16} />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Nama Pegawai</div>
+                        <h4 className="font-bold text-slate-800 text-sm select-text">{p.nama}</h4>
+                      </div>
                     </div>
-                  </td>
+                    <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">
+                      Gol: {p.golongan || '-'}
+                    </span>
+                  </div>
 
-                  {/* KOLOM DATA: Tetap bisa di-copy */}
-                  <td className="p-6 font-mono text-xs text-slate-500 font-bold select-text">{p.nip || '-'}</td>
-                  <td className="p-6 font-bold text-slate-800 text-sm select-text">{p.nama}</td>
-                  <td className="p-6 text-sm font-medium text-slate-600 select-text">{p.jabatan || '-'}</td>
-                  <td className="p-6 text-center"><span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider">{p.golongan || '-'}</span></td>
-                  <td className="p-6">
-                    <div className="flex justify-center gap-2">
-                      <button onClick={() => handleEdit(p)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all"><Edit size={18} /></button>
-                      <button onClick={() => handleDelete(p.id)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"><Trash2 size={18} /></button>
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-0.5">NIP</span>
+                      <span className="text-xs font-mono font-bold text-slate-700 select-text">{p.nip || '-'}</span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-0.5">Jabatan</span>
+                      <span className="text-xs font-bold text-slate-800 select-text">{p.jabatan || '-'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button 
+                      onClick={() => handleEdit(p)} 
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all text-xs font-bold cursor-pointer"
+                    >
+                      <Edit size={14}/> Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(p.id)} 
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all text-xs font-bold cursor-pointer"
+                    >
+                      <Trash2 size={14}/> Hapus
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-20 text-center">
+                <Inbox size={48} className="mx-auto text-slate-200 mb-4" />
+                <p className="font-bold text-slate-400 uppercase tracking-widest">Tidak Ada Data Pegawai</p>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 

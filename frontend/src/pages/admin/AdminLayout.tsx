@@ -20,7 +20,9 @@ import {
   Database,
   FileText,
   ListChecks,
-  Link as LinkIcon // Ikon baru untuk Shortlink (dialias agar tidak bentrok dengan Link dari react-router-dom)
+  Link as LinkIcon,
+  Menu,
+  X
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import logo from '../../assets/images/logo.png';
@@ -32,6 +34,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isKeuanganOpen, setIsKeuanganOpen] = useState(false);
   const [isRekapanOpen, setIsRekapanOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const rekapanCategories = [
     "PENGELOLAAN PORTAL", "PENGEMBANGAN FRONTEND", "PENGEMBANGAN BACKEND", 
@@ -84,6 +87,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <Link
         key={menu.path}
         to={menu.path}
+        onClick={() => setIsMobileOpen(false)}
         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-xs uppercase tracking-wider relative group ${
           isActive 
           ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20' 
@@ -107,19 +111,41 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <aside className={`bg-brand-dark text-white flex flex-col shrink-0 shadow-2xl z-20 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      
+      {/* Mobile Drawer Overlay Backdrop */}
+      {isMobileOpen && (
+        <div 
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 lg:hidden"
+        />
+      )}
+
+      {/* Sidebar aside */}
+      <aside className={`
+        bg-brand-dark text-white flex flex-col shrink-0 shadow-2xl z-40 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out
+        fixed inset-y-0 left-0 lg:static lg:translate-x-0
+        ${isMobileOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0'}
+        ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
+      `}>
         
-        <div className={`p-6 mb-4 flex items-center border-b border-white/5 sticky top-0 bg-brand-dark z-10 ${isCollapsed ? 'justify-center' : 'justify-start gap-3'}`}>
-          <img src={logo} alt="Logo" className="h-8 w-8 object-contain brightness-0 invert shrink-0" />
-          {!isCollapsed && (
-            <div className="flex flex-col animate-in fade-in duration-300">
+        <div className={`p-6 mb-4 flex items-center justify-between border-b border-white/5 sticky top-0 bg-brand-dark z-10 ${isCollapsed ? 'lg:justify-center' : 'gap-3'}`}>
+          <div className={`flex items-center ${isCollapsed ? 'lg:justify-center lg:w-full' : 'gap-3'}`}>
+            <img src={logo} alt="Logo" className="h-8 w-8 object-contain brightness-0 invert shrink-0" />
+            <div className={`flex flex-col animate-in fade-in duration-300 ${isCollapsed ? 'lg:hidden' : ''}`}>
                <span className="font-black text-[10px] tracking-tighter leading-tight uppercase opacity-80">Admin<br/>Statistik</span>
             </div>
-          )}
+          </div>
+          {/* Close button on mobile sidebar drawer */}
+          <button 
+            onClick={() => setIsMobileOpen(false)}
+            className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all cursor-pointer"
+          >
+            <X size={18} />
+          </button>
         </div>
         
         <nav className="flex-1 px-4 space-y-2 pb-6">
-          <Link to="/" className={`flex items-center justify-center rounded-xl transition-all font-bold text-[10px] uppercase tracking-[0.2em] text-emerald-400 border border-emerald-400/20 hover:bg-emerald-400/10 mb-6 ${isCollapsed ? 'h-11 w-11 p-0 border-none' : 'px-4 py-3 gap-3'}`}>
+          <Link to="/" onClick={() => setIsMobileOpen(false)} className={`flex items-center justify-center rounded-xl transition-all font-bold text-[10px] uppercase tracking-[0.2em] text-emerald-400 border border-emerald-400/20 hover:bg-emerald-400/10 mb-6 ${isCollapsed ? 'h-11 w-11 p-0 border-none' : 'px-4 py-3 gap-3'}`}>
             <ExternalLink size={18} /> 
             {!isCollapsed && 'Lihat Website'}
           </Link>
@@ -146,7 +172,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <div className="overflow-hidden">
                   <div className="ml-4 flex flex-col gap-1 border-l border-white/10 pl-2 pb-1">
                     {rekapanCategories.map((cat) => (
-                      <Link key={cat} to={`/admin/rekapan?kategori=${encodeURIComponent(cat)}`} className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${isActiveRekapan(cat) ? 'bg-brand-primary text-white' : 'text-slate-500 hover:text-white'}`}>
+                      <Link key={cat} to={`/admin/rekapan?kategori=${encodeURIComponent(cat)}`} onClick={() => setIsMobileOpen(false)} className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${isActiveRekapan(cat) ? 'bg-brand-primary text-white' : 'text-slate-500 hover:text-white'}`}>
                         {cat}
                       </Link>
                     ))}
@@ -177,13 +203,13 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <div className={`grid transition-all duration-300 ease-in-out ${isKeuanganOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
                 <div className="overflow-hidden">
                   <div className="ml-4 flex flex-col gap-1 border-l border-white/10 pl-2 pb-1">
-                    <Link to="/admin/keuangan/anggaran" className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${location.pathname === '/admin/keuangan/anggaran' ? 'bg-brand-primary text-white font-black' : 'text-slate-500 hover:text-white'}`}>
+                    <Link to="/admin/keuangan/anggaran" onClick={() => setIsMobileOpen(false)} className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${location.pathname === '/admin/keuangan/anggaran' ? 'bg-brand-primary text-white font-black' : 'text-slate-500 hover:text-white'}`}>
                       Realisasi Anggaran
                     </Link>
-                    <Link to="/admin/keuangan/pengadaan/modal" className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${location.pathname === '/admin/keuangan/pengadaan/modal' ? 'bg-brand-primary text-white font-black' : 'text-slate-500 hover:text-white'}`}>
+                    <Link to="/admin/keuangan/pengadaan/modal" onClick={() => setIsMobileOpen(false)} className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${location.pathname === '/admin/keuangan/pengadaan/modal' ? 'bg-brand-primary text-white font-black' : 'text-slate-500 hover:text-white'}`}>
                       PBJ Modal
                     </Link>
-                    <Link to="/admin/keuangan/pengadaan/pegawai" className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${location.pathname === '/admin/keuangan/pengadaan/pegawai' ? 'bg-brand-primary text-white font-black' : 'text-slate-500 hover:text-white'}`}>
+                    <Link to="/admin/keuangan/pengadaan/pegawai" onClick={() => setIsMobileOpen(false)} className={`px-4 py-2.5 rounded-lg text-[9px] font-bold uppercase ${location.pathname === '/admin/keuangan/pengadaan/pegawai' ? 'bg-brand-primary text-white font-black' : 'text-slate-500 hover:text-white'}`}>
                       PBJ Pegawai
                     </Link>
                   </div>
@@ -194,7 +220,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </nav>
 
         <div className="p-4 mt-auto border-t border-white/5 space-y-1 sticky bottom-0 bg-brand-dark z-10">
-            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full flex items-center justify-center gap-3 px-4 py-3 text-slate-500 hover:text-brand-primary rounded-xl transition-all font-bold text-xs uppercase">
+            <button onClick={() => setIsCollapsed(!isCollapsed)} className="w-full flex lg:flex items-center justify-center gap-3 px-4 py-3 text-slate-500 hover:text-brand-primary rounded-xl transition-all font-bold text-xs uppercase">
                 {isCollapsed ? <ChevronRight size={20} /> : <><ChevronLeft size={20} /> Kecilkan Menu</>}
             </button>
             <button onClick={handleLogout} className={`w-full flex items-center gap-3 px-4 py-3 text-red-400 font-bold text-xs hover:bg-red-500/10 rounded-xl transition-all uppercase relative group ${isCollapsed ? 'justify-center px-0!' : ''}`}>
@@ -207,7 +233,32 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
       </aside>
 
+      {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        
+        {/* Sticky Mobile Header */}
+        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between lg:hidden shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMobileOpen(true)}
+              className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-all active:scale-95 cursor-pointer"
+            >
+              <Menu size={24} />
+            </button>
+            <div className="flex items-center gap-2">
+              <img src={logo} alt="Logo" className="h-6 w-6 object-contain" />
+              <span className="font-black text-xs uppercase tracking-wider text-slate-800">Admin Statistik</span>
+            </div>
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all cursor-pointer"
+            title="Logout"
+          >
+            <LogOut size={20} />
+          </button>
+        </header>
+
         {children}
       </main>
     </div>

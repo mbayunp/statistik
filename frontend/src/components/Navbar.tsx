@@ -24,7 +24,7 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="sticky top-0 z-50 bg-white/90 dark:bg-brand-dark/95 backdrop-blur-md border-b border-slate-100 dark:border-white/5 transition-colors duration-300">
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex justify-between items-center">
         
         {/* Logo */}
         <div className="flex items-center">
@@ -32,7 +32,7 @@ const Navbar: React.FC = () => {
             <img 
               src={logoPanjang} 
               alt="Statistik Center Logo" 
-              className="h-10 md:h-12 w-auto object-contain dark:brightness-0 dark:invert transition-all" 
+              className="h-8 md:h-12 w-auto object-contain dark:brightness-0 dark:invert transition-all" 
             />
           </Link>
         </div>
@@ -82,8 +82,8 @@ const Navbar: React.FC = () => {
 
       {/* Mobile Menu Drawer */}
       <div className={`
-        fixed inset-x-0 top-[73px] bg-white dark:bg-brand-dark border-b border-slate-100 dark:border-white/5 shadow-xl transition-all duration-300 ease-in-out md:hidden overflow-hidden
-        ${isOpen ? 'max-h-screen opacity-100 py-6' : 'max-h-0 opacity-0 py-0'}
+        fixed inset-x-0 top-[57px] md:top-[80px] bg-white dark:bg-brand-dark border-b border-slate-100 dark:border-white/5 shadow-xl transition-all duration-300 ease-in-out md:hidden
+        ${isOpen ? 'translate-y-0 opacity-100 py-6 pointer-events-auto' : '-translate-y-4 opacity-0 py-0 pointer-events-none h-0 overflow-hidden'}
       `}>
         <div className="flex flex-col px-6 gap-4">
           <Link to="/" onClick={toggleMenu} className="text-lg font-bold text-slate-700 dark:text-slate-200 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl">Beranda</Link>

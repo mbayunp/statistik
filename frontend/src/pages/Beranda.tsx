@@ -305,7 +305,7 @@ const Beranda: React.FC = () => {
               { icon: <BarChart3 size={36} />, title: "Publikasi Statistik Daerah", bg: "bg-teal-50 dark:bg-teal-500/10", text: "text-teal-600 dark:text-teal-400" },
               { icon: <Search size={36} />, title: "Monitoring & Evaluasi Data", bg: "bg-purple-50 dark:bg-purple-500/10", text: "text-purple-600 dark:text-purple-400" }
             ].map((item, index) => (
-              <div key={index} className="bg-slate-50 dark:bg-[#001D1E]/60 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-white/5 text-center hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group">
+              <div key={index} className="p-8 rounded-[2.5rem] text-center glass-card hover-lift transition-all group">
                 <div className={`w-18 h-18 mx-auto ${item.bg} ${item.text} rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-all`}>
                   {item.icon}
                 </div>
@@ -359,7 +359,7 @@ const Beranda: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {statistikItems.map((item, index) => (
-              <div key={index} className="flex w-full flex-col gap-4 rounded-3xl border border-slate-200/60 bg-white p-6 text-center text-slate-800 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:ring-2 hover:ring-brand-primary/20 dark:bg-brand-dark dark:text-white dark:border-white/5">
+              <div key={index} className="flex w-full flex-col gap-4 rounded-3xl p-6 text-center text-slate-800 dark:text-white glass-card hover-lift hover:ring-2 hover:ring-brand-primary/20 transition-all">
                 <div className="w-12 h-12 mx-auto rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center">
                   {item.icon}
                 </div>

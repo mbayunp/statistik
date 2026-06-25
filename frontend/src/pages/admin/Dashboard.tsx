@@ -368,7 +368,7 @@ const Dashboard: React.FC = () => {
           <div 
             key={index} 
             onClick={() => navigate(card.path)}
-            className="bg-white p-1 rounded-4xl shadow-sm border border-slate-200/60 group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+            className="p-1 rounded-4xl glass-card hover-lift transition-all duration-300 cursor-pointer"
           >
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
@@ -409,9 +409,9 @@ const Dashboard: React.FC = () => {
                 <p className="text-xs text-slate-400 font-medium">Perbandingan volume persuratan per bulan (Tahun 2026)</p>
               </div>
             </div>
-            <div className="h-64 w-full">
+            <div className="h-56 sm:h-64 md:h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={suratTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={suratTrend} margin={{ top: 10, right: 5, left: -15, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#00D2B4" stopOpacity={0.4}/>
@@ -496,10 +496,10 @@ const Dashboard: React.FC = () => {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="w-1/2 space-y-2 text-xs font-bold text-slate-600">
+                <div className="w-1/2 space-y-2 text-[10px] sm:text-xs font-bold text-slate-600">
                   {asetStats.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
+                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
                       <span className="truncate">{item.name} ({item.value})</span>
                     </div>
                   ))}
@@ -523,7 +523,7 @@ const Dashboard: React.FC = () => {
 
             <div className="flex-1 space-y-6 overflow-y-auto pr-1">
               {activities.map((act, index) => (
-                <div key={index} className="flex gap-4 items-start group">
+                <div key={index} className={`flex gap-4 items-start group ${index >= 3 ? 'hidden sm:flex' : ''}`}>
                   <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center ${act.iconBg || 'bg-slate-100 text-slate-500'}`}>
                     {act.type === 'surat_masuk' ? <Mail size={18} /> : act.type === 'aset' ? <Monitor size={18} /> : act.type === 'kegiatan' ? <Activity size={18} /> : <AlertCircle size={18} />}
                   </div>

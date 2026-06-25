@@ -30,6 +30,10 @@ const AsetBidang: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // State Kategori & Penempatan Ruang
+  const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
+  const [isNewRoom, setIsNewRoom] = useState(false);
+
   const initialForm = {
     nama_barang: '',
     jenis_barang: '',
@@ -63,6 +67,7 @@ const AsetBidang: React.FC = () => {
     setEditMode(false);
     setCurrentId(null);
     setFormData(initialForm);
+    setIsNewRoom(false);
     setShowModal(true);
   };
 
@@ -79,6 +84,7 @@ const AsetBidang: React.FC = () => {
       penempatan: item.penempatan || '',
       keadaan: item.keadaan
     });
+    setIsNewRoom(false);
     setShowModal(true);
   };
 
@@ -141,12 +147,23 @@ const AsetBidang: React.FC = () => {
     XLSX.writeFile(workbook, `Data_Aset_Bidang.xlsx`);
   };
 
-  const filteredData = data.filter(d => 
-    d.nama_barang.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    d.merk_model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.jenis_barang.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (d.penempatan && d.penempatan.toLowerCase().includes(searchTerm.toLowerCase()))
+  const uniqueRooms = Array.from(
+    new Set(data.map((item) => item.penempatan).filter((p): p is string => !!p && p.trim() !== ''))
   );
+
+  const categories = ['Semua', ...uniqueRooms];
+
+  const filteredData = data.filter(d => {
+    const matchesSearch = 
+      d.nama_barang.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      d.merk_model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.jenis_barang.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.penempatan && d.penempatan.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+    const matchesCategory = selectedCategory === 'Semua' || d.penempatan === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -174,10 +191,10 @@ const AsetBidang: React.FC = () => {
         </div>
         
         <div className="flex gap-3">
-          <button onClick={handleExportExcel} className="bg-emerald-500 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-600 shadow-xl transition-all">
+          <button onClick={handleExportExcel} className="bg-emerald-500 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-600 shadow-xl transition-all hover-lift active-shrink cursor-pointer">
             <FileSpreadsheet size={20} /> Export Excel
           </button>
-          <button onClick={handleAddClick} className="bg-brand-dark text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-blue-500 shadow-xl transition-all">
+          <button onClick={handleAddClick} className="bg-brand-dark text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-blue-500 shadow-xl transition-all hover-lift active-shrink cursor-pointer">
             <Plus size={20} /> Tambah Aset
           </button>
         </div>
@@ -197,9 +214,31 @@ const AsetBidang: React.FC = () => {
         </div>
       </div>
 
+      {/* Kategori Penempatan Ruang */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-1 px-1">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => {
+              setSelectedCategory(cat);
+              setCurrentPage(1);
+            }}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer shadow-sm ${
+              selectedCategory === cat
+                ? 'bg-blue-500 text-white shadow-blue-100'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       {/* Tabel */}
       <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden relative z-10">
-        <div className="overflow-x-auto">
+        
+        {/* Versi Desktop (Tabel) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-slate-50/80 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
               <tr>
@@ -251,6 +290,76 @@ const AsetBidang: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Versi Mobile (Card List) */}
+        <div className="block md:hidden divide-y divide-slate-100">
+          {loading ? (
+            <div className="p-10 text-center font-bold text-slate-400 animate-pulse">Memuat...</div>
+          ) : currentItems.length > 0 ? (
+            currentItems.map((item, index) => (
+              <div key={item.id} className="p-6 space-y-4 text-left">
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Barang & Spesifikasi</div>
+                    <div className="font-bold text-slate-800 text-sm">{item.nama_barang}</div>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className="text-[10px] font-black text-slate-500 uppercase flex items-center gap-1"><Box size={12}/> {item.jenis_barang}</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-[10px] font-bold text-blue-500 uppercase">{item.merk_model}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right shrink-0">
+                    No. {indexOfFirstItem + index + 1}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase block mb-0.5">Tahun</span>
+                    <span className="text-xs font-bold text-slate-700">{item.tahun_pembelian}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase block mb-0.5">Jumlah</span>
+                    <span className="text-xs font-black text-slate-850">{item.jumlah}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase block mb-0.5">Kondisi</span>
+                    <div className="mt-0.5">{renderBadge(item.keadaan)}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Penempatan</span>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+                    <MapPin size={14} className="text-rose-500" />
+                    {item.penempatan || '-'}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button 
+                    onClick={() => handleEditClick(item)} 
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all text-xs font-bold cursor-pointer"
+                  >
+                    <Edit3 size={14}/> Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(item.id)} 
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all text-xs font-bold cursor-pointer"
+                  >
+                    <Trash2 size={14}/> Hapus
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-20 text-center">
+              <Inbox size={48} className="mx-auto text-slate-200 mb-4" />
+              <p className="font-bold text-slate-400 uppercase tracking-widest">Tidak Ada Data Aset</p>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Pagination */}
@@ -296,7 +405,53 @@ const AsetBidang: React.FC = () => {
 
                 <div className="col-span-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Penempatan (Ruangan)</label>
-                  <input type="text" required placeholder="Contoh: Ruang Rapat Lt. 1, Ruang Kabid..." className="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500 text-sm font-bold text-slate-700" value={formData.penempatan} onChange={e => setFormData({...formData, penempatan: e.target.value})} />
+                  {isNewRoom || uniqueRooms.length === 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          required 
+                          placeholder="Masukkan nama ruangan baru..." 
+                          className="flex-1 p-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500 text-sm font-bold text-slate-700" 
+                          value={formData.penempatan} 
+                          onChange={e => setFormData({...formData, penempatan: e.target.value})} 
+                        />
+                        {uniqueRooms.length > 0 && (
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              setIsNewRoom(false);
+                              setFormData({...formData, penempatan: ''});
+                            }}
+                            className="px-4 py-2 bg-slate-200 text-slate-600 rounded-2xl font-bold text-xs uppercase hover:bg-slate-300 transition-all cursor-pointer"
+                          >
+                            Batal
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[10px] font-medium text-slate-400">Ketik nama ruangan baru. Ruangan ini akan otomatis menjadi pilihan setelah disimpan.</p>
+                    </div>
+                  ) : (
+                    <select 
+                      required 
+                      className="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-blue-500 text-sm font-bold text-slate-700 cursor-pointer"
+                      value={formData.penempatan} 
+                      onChange={e => {
+                        if (e.target.value === '__NEW__') {
+                          setIsNewRoom(true);
+                          setFormData({...formData, penempatan: ''});
+                        } else {
+                          setFormData({...formData, penempatan: e.target.value});
+                        }
+                      }}
+                    >
+                      <option value="" disabled>-- Pilih Penempatan Ruang --</option>
+                      {uniqueRooms.map(room => (
+                        <option key={room} value={room}>{room}</option>
+                      ))}
+                      <option value="__NEW__" className="text-blue-500 font-bold">+ Tambah Ruang Baru...</option>
+                    </select>
+                  )}
                 </div>
 
                 <div className="col-span-1">

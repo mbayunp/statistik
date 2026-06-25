@@ -175,7 +175,7 @@ const SuratPage: React.FC = () => {
           
           <button 
             onClick={() => setShowModal(true)}
-            className="bg-brand-dark text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary transition-all shadow-xl active:scale-95"
+            className="bg-brand-dark text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary transition-all shadow-xl hover-lift active-shrink cursor-pointer"
           >
             <Plus size={20} /> Catat Surat {type}
           </button>
@@ -214,7 +214,9 @@ const SuratPage: React.FC = () => {
 
         {/* === TABLE SECTION === */}
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden relative">
-          <div className="overflow-x-auto">
+          
+          {/* Versi Desktop (Tabel) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -311,6 +313,85 @@ const SuratPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Versi Mobile (Card List) */}
+          <div className="block md:hidden divide-y divide-slate-100">
+            {loading ? (
+              <div className="p-20 text-center">
+                 <Loader2 className="animate-spin mx-auto text-brand-primary" size={40} />
+                 <p className="mt-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Memuat data...</p>
+              </div>
+            ) : currentItems.length > 0 ? (
+              currentItems.map((s, index) => (
+                <div key={s.id} className="p-6 space-y-4 text-left">
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Info Surat</div>
+                      <div className="font-bold text-slate-800 text-sm leading-tight">{s.nomor_surat}</div>
+                      <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider mt-1 ${isMasuk ? 'text-emerald-500' : 'text-blue-500'}`}>
+                        <Building2 size={12} />
+                        {s.instansi}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right shrink-0">
+                      No. {indexOfFirstItem + index + 1}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-0.5">Tgl Surat</span>
+                      <span className="text-xs font-bold text-slate-700">{formatTanggal(s.tanggal_surat)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-0.5">{isMasuk ? 'Diterima' : 'Dikirim'}</span>
+                      <span className="text-xs font-black text-slate-800">{formatTanggal(s.tanggal_terima)}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Perihal</span>
+                    <p className="text-xs text-slate-600 italic leading-relaxed">"{s.perihal}"</p>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                    {s.file_surat ? (
+                      <a 
+                        href={`${API_BASE_URL}/uploads/${s.file_surat}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                          s.file_surat.toLowerCase().endsWith('.pdf') 
+                          ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white' 
+                          : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
+                        }`}
+                      >
+                        {s.file_surat.toLowerCase().endsWith('.pdf') ? <FileText size={14} /> : <Download size={14} />}
+                        Dokumen
+                      </a>
+                    ) : (
+                      <span className="text-slate-300 text-[10px] italic font-bold uppercase">No File</span>
+                    )}
+
+                    <button 
+                      onClick={() => handleDelete(s.id)} 
+                      className="inline-flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      <Trash2 size={16} /> <span className="text-xs font-bold">Hapus</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-20 text-center">
+                 <div className="flex flex-col items-center opacity-20">
+                    <Inbox size={64} />
+                    <p className="mt-4 font-black text-sm uppercase tracking-widest">Data Tidak Ditemukan</p>
+                 </div>
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* === PAGINATION === */}
