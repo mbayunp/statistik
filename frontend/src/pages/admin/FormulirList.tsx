@@ -44,7 +44,7 @@ const FormulirList: React.FC = () => {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`${API_BASE_URL}/api/forms/${id}`);
+        await axios.delete(`${API_BASE_URL}/api/formulir/${id}`);
         Swal.fire({
           icon: 'success',
           title: 'Terhapus!',
