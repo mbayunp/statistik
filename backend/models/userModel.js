@@ -20,6 +20,13 @@ const User = {
         const query = 'UPDATE users SET password = ? WHERE username = ?';
         const [result] = await db.execute(query, [hashedPassword, username]);
         return result;
+    },
+
+    // Mengambil seluruh user
+    getAllUsers: async () => {
+        const query = 'SELECT id, username, role FROM users ORDER BY username ASC';
+        const [rows] = await db.execute(query);
+        return rows;
     }
 };
 

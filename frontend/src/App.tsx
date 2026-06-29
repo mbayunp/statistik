@@ -25,6 +25,7 @@ import PenugasanPage from './pages/admin/PenugasanPage';
 import AsetBidang from './pages/admin/AsetBidang';
 import RekapanPermohonan from './pages/admin/RekapanPermohonan';
 import LaporanBulanan from './pages/admin/LaporanBulanan';
+import LaporanKinerjaPegawai from './pages/admin/LaporanKinerjaPegawai';
 import FormulirList from './pages/admin/FormulirList';
 import FormBuilder from './pages/admin/FormBuilder';
 import FormulirResponses from './pages/admin/FormulirResponses';
@@ -97,6 +98,7 @@ const App: React.FC = () => {
           <Route path="aset" element={<AsetBidang />} />
           <Route path="rekapan-permohonan" element={<RekapanPermohonan />} />
           <Route path="laporan-tenaga-ahli" element={<LaporanBulanan />} />
+          <Route path="laporan-kinerja" element={<LaporanKinerjaPegawai />} />
           <Route path="formulir" element={<FormulirList />} />
           <Route path="formulir/builder" element={<FormBuilder />} />
           <Route path="formulir/responses/:formId" element={<FormulirResponses />} />

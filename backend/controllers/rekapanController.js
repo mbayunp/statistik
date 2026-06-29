@@ -24,19 +24,29 @@ const rekapanController = {
       const filePaths = req.files.map(file => `/uploads/${file.filename}`);
       const dokumentasiString = JSON.stringify(filePaths);
 
-      // 2. Tambahkan kolom link_materi ke query INSERT
-      const query = `INSERT INTO rekapan_kegiatan (tanggal, nama_kegiatan, kategori, keterangan, link_materi, dokumentasi) VALUES (?, ?, ?, ?, ?, ?)`;
+      // 2. Tambahkan kolom link_materi dan user_id ke query INSERT
+      const query = `INSERT INTO rekapan_kegiatan (tanggal, nama_kegiatan, kategori, keterangan, link_materi, dokumentasi, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
       
+      const userId = req.user ? req.user.id : null;
       const values = [
         tanggal, 
         nama_kegiatan, 
         kategori, 
         keterangan || null, 
         link_materi || null, // Masukkan value-nya (bisa null jika kosong)
-        dokumentasiString 
+        dokumentasiString,
+        userId
       ];
 
       const [result] = await db.execute(query, values);
+
+      // Log aktivitas audit trail
+      await logActivity(
+        userId, 
+        'REKAPAN_INTERNAL', 
+        'CREATE', 
+        `Membuat rekapan kegiatan baru "${nama_kegiatan}" (ID: ${result.insertId})`
+      );
 
       res.status(201).json({ success: true, message: 'Rekapan berhasil disimpan' });
     } catch (error) {
@@ -116,6 +126,47 @@ const rekapanController = {
     } catch (error) {
       console.error(error);
       res.status(500).json({ success: false, message: 'Gagal menghapus rekapan' });
+    }
+  },
+
+  getRekapanLaporan: async (req, res) => {
+    try {
+      const { user_id, month, year } = req.query;
+
+      if (!user_id || !month || !year) {
+        return res.status(400).json({ success: false, message: 'Parameter user_id, month, dan year wajib diisi!' });
+      }
+
+      const months = {
+        'januari': 1, 'februari': 2, 'maret': 3, 'april': 4, 'mei': 5, 'juni': 6,
+        'juli': 7, 'agustus': 8, 'september': 9, 'oktober': 10, 'november': 11, 'desember': 12,
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+        'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+      };
+      
+      const monthLower = String(month).toLowerCase().trim();
+      const monthNumber = months[monthLower] || parseInt(monthLower) || null;
+
+      if (!monthNumber || monthNumber < 1 || monthNumber > 12) {
+        return res.status(400).json({ success: false, message: 'Format bulan tidak valid!' });
+      }
+
+      const query = `
+        SELECT rk.*, u.username, u.role
+        FROM rekapan_kegiatan rk
+        INNER JOIN users u ON rk.user_id = u.id
+        WHERE rk.user_id = ? 
+          AND MONTH(rk.tanggal) = ? 
+          AND YEAR(rk.tanggal) = ?
+        ORDER BY rk.tanggal ASC, rk.id ASC
+      `;
+      
+      const [rows] = await db.execute(query, [user_id, monthNumber, year]);
+
+      res.status(200).json({ success: true, data: rows });
+    } catch (error) {
+      console.error('Error fetching report:', error);
+      res.status(500).json({ success: false, message: 'Gagal mengambil data laporan kinerja.' });
     }
   }
 };

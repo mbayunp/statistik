@@ -14,4 +14,7 @@ router.post('/verify-pin', authController.verifyPin);
 // POST /api/auth/reset-password
 router.post('/reset-password', authController.resetPasswordViaPin);
 
+// GET /api/auth/users
+router.get('/users', authController.getAllUsers);
+
 module.exports = router;

@@ -98,7 +98,17 @@ exports.resetPasswordViaPin = async (req, res) => {
 
         res.status(200).json({ success: true, message: 'Password berhasil direset!' });
     } catch (error) {
-        console.error('Error reset password:', error);
+      console.error('Error reset password:', error);
+      res.status(500).json({ success: false, message: 'Terjadi kesalahan pada server' });
+    }
+};
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        const rows = await User.getAllUsers();
+        res.status(200).json({ success: true, data: rows });
+    } catch (error) {
+        console.error('Error getAllUsers:', error);
         res.status(500).json({ success: false, message: 'Terjadi kesalahan pada server' });
     }
 };
