@@ -33,16 +33,36 @@ interface RekapanLaporanItem {
   role: string;
 }
 
+interface DecodedToken {
+  id: number;
+  username: string;
+  role: string;
+  exp: number;
+}
+
+const decodeToken = (token: string): DecodedToken | null => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return null;
+  }
+};
+
 const LaporanKinerjaPegawai: React.FC = () => {
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [reportData, setReportData] = useState<RekapanLaporanItem[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingReport, setLoadingReport] = useState(false);
-
-  // Filter States
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [selectedMonth, setSelectedMonth] = useState<string>('Januari');
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
 
   const listBulan = [
     "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
@@ -54,8 +74,32 @@ const LaporanKinerjaPegawai: React.FC = () => {
     (_, i) => (new Date().getFullYear() - 2 + i).toString()
   );
 
+  // Decode current logged-in user
+  const [currentUser] = useState<DecodedToken | null>(() => {
+    const token = localStorage.getItem('token');
+    return token ? decodeToken(token) : null;
+  });
+
+  // Filter States
+  const [selectedUserId, setSelectedUserId] = useState<string>(() => {
+    const token = localStorage.getItem('token');
+    const decoded = token ? decodeToken(token) : null;
+    return decoded ? decoded.id.toString() : '';
+  });
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    return listBulan[new Date().getMonth()];
+  });
+  const [selectedYear, setSelectedYear] = useState<string>(() => {
+    return new Date().getFullYear().toString();
+  });
+
   // Fetch all user accounts for dropdown selection
   const fetchUsers = React.useCallback(async () => {
+    if (currentUser?.role !== 'admin') {
+      setLoadingUsers(false);
+      return;
+    }
+
     try {
       setLoadingUsers(true);
       const token = localStorage.getItem('token');
@@ -65,10 +109,6 @@ const LaporanKinerjaPegawai: React.FC = () => {
       if (response.data.success) {
         const fetchedUsers = response.data.data || [];
         setUsers(fetchedUsers);
-        // Default select the first user if available
-        if (fetchedUsers.length > 0) {
-          setSelectedUserId(fetchedUsers[0].id.toString());
-        }
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -80,7 +120,7 @@ const LaporanKinerjaPegawai: React.FC = () => {
     } finally {
       setLoadingUsers(false);
     }
-  }, []);
+  }, [currentUser]);
 
   // Fetch monthly performance report for the selected user, month, and year
   const fetchReport = useCallback(async () => {
@@ -302,26 +342,32 @@ const LaporanKinerjaPegawai: React.FC = () => {
         {/* Pilih Pegawai */}
         <div className="flex-1 min-w-[200px] w-full text-left">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
-            <User size={12} /> Pilih Akun Pegawai
+            <User size={12} /> Pegawai / Akun
           </label>
-          <select 
-            value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
-            disabled={loadingUsers}
-            className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl px-4 py-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-brand-primary transition-colors cursor-pointer disabled:opacity-50"
-          >
-            {loadingUsers ? (
-              <option>Memuat daftar akun...</option>
-            ) : users.length === 0 ? (
-              <option>Tidak ada akun</option>
-            ) : (
-              users.map(u => (
-                <option key={u.id} value={u.id}>
-                  {u.username.toUpperCase()} ({u.role.toUpperCase()})
-                </option>
-              ))
-            )}
-          </select>
+          {currentUser?.role === 'admin' ? (
+            <select 
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              disabled={loadingUsers}
+              className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl px-4 py-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-brand-primary transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {loadingUsers ? (
+                <option>Memuat daftar akun...</option>
+              ) : users.length === 0 ? (
+                <option>Tidak ada akun</option>
+              ) : (
+                users.map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.username.toUpperCase()} ({u.role.toUpperCase()})
+                  </option>
+                ))
+              )}
+            </select>
+          ) : (
+            <div className="w-full bg-slate-100 border border-slate-200 rounded-2xl px-4 py-3.5 text-xs font-black text-slate-700 uppercase tracking-wider">
+              {currentUser?.username || 'Sistem / Anonim'} ({currentUser?.role || 'User'})
+            </div>
+          )}
         </div>
 
         {/* Pilih Bulan */}

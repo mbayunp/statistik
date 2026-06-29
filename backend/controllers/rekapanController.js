@@ -131,10 +131,16 @@ const rekapanController = {
 
   getRekapanLaporan: async (req, res) => {
     try {
-      const { user_id, month, year } = req.query;
+      const { month, year } = req.query;
+      let { user_id } = req.query;
+
+      // Fallback ke req.user.id dari middleware auth jika user_id tidak dikirim
+      if (!user_id && req.user) {
+        user_id = req.user.id;
+      }
 
       if (!user_id || !month || !year) {
-        return res.status(400).json({ success: false, message: 'Parameter user_id, month, dan year wajib diisi!' });
+        return res.status(400).json({ success: false, message: 'Parameter user_id (atau token), month, dan year wajib diisi!' });
       }
 
       const months = {
