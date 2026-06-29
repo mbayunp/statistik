@@ -16,8 +16,7 @@ import {
   RefreshCw,
   Database,
   TrendingUp,
-  Activity,
-  AlertCircle
+  Activity
 } from 'lucide-react';
 import { 
   AreaChart, Area, PieChart, Pie, Cell, RadialBarChart, RadialBar,
@@ -44,13 +43,6 @@ interface AnggaranStatsItem {
   fill: string;
 }
 
-interface ActivityLogItem {
-  type?: string;
-  title: string;
-  subtitle: string;
-  time: string;
-  iconBg: string;
-}
 
 interface PermohonanItem {
   jumlah_selesai: number;
@@ -106,8 +98,7 @@ const Dashboard: React.FC = () => {
   const [asetStats, setAsetStats] = useState<AsetStatsItem[]>([]);
   const [anggaranStats, setAnggaranStats] = useState<AnggaranStatsItem[]>([]);
   
-  // Recent Activities
-  const [activities, setActivities] = useState<ActivityLogItem[]>([]);
+
 
   const fetchDashboardData = async () => {
     try {
@@ -258,44 +249,6 @@ const Dashboard: React.FC = () => {
         ]);
       }
 
-      // 4. Generate Recent Activities log
-      const logList: ActivityLogItem[] = [];
-      sMasuk.slice(0, 2).forEach(s => {
-        logList.push({
-          type: 'surat_masuk',
-          title: `Surat Masuk dicatat: ${s.perihal || s.nomor_surat}`,
-          subtitle: `Dari: ${s.instansi || '-'}`,
-          time: 'Baru saja',
-          iconBg: 'bg-emerald-50 text-emerald-600'
-        });
-      });
-      aList.slice(0, 1).forEach(a => {
-        logList.push({
-          type: 'aset',
-          title: `Aset Terdaftar: ${a.nama_barang}`,
-          subtitle: `Merk: ${a.merk_model} | Kondisi: ${a.keadaan || '-'}`,
-          time: '30 menit lalu',
-          iconBg: 'bg-cyan-50 text-cyan-600'
-        });
-      });
-      kPublikasi.slice(0, 2).forEach(k => {
-        logList.push({
-          type: 'kegiatan',
-          title: `Kegiatan dipublikasikan: ${k.keterangan}`,
-          subtitle: `Tanggal: ${k.tanggal}`,
-          time: '1 jam lalu',
-          iconBg: 'bg-blue-50 text-blue-600'
-        });
-      });
-
-      if (logList.length === 0) {
-        setActivities([
-          { title: 'Aplikasi diinisialisasi', subtitle: 'Server berjalan di interface 0.0.0.0:5000', time: '10 menit lalu', iconBg: 'bg-brand-primary/10 text-brand-primary' },
-          { title: 'Koneksi MySQL terhubung', subtitle: 'Terkoneksi ke database db_statistik', time: '12 menit lalu', iconBg: 'bg-brand-primary/10 text-brand-primary' }
-        ]);
-      } else {
-        setActivities(logList.slice(0, 5));
-      }
 
     } catch (err) {
       console.error("Gagal mengambil data dashboard secara keseluruhan", err);
