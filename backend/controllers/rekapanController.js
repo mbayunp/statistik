@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 const rekapanController = {
   getAllRekapan: async (req, res) => {
@@ -72,6 +73,15 @@ const rekapanController = {
         return res.status(404).json({ success: false, message: 'Data rekapan tidak ditemukan' });
       }
 
+      // Log aktivitas audit trail
+      const userId = req.user ? req.user.id : null;
+      await logActivity(
+        userId, 
+        'REKAPAN_INTERNAL', 
+        'UPDATE', 
+        `Mengupdate rekapan kegiatan "${nama_kegiatan}" (ID: ${id})`
+      );
+
       res.status(200).json({ success: true, message: 'Rekapan berhasil diperbarui' });
     } catch (error) {
       console.error(error);
@@ -82,7 +92,26 @@ const rekapanController = {
   deleteRekapan: async (req, res) => {
     try {
       const { id } = req.params;
-      await db.execute('DELETE FROM rekapan_kegiatan WHERE id = ?', [id]);
+
+      // Ambil nama kegiatan terlebih dahulu sebelum menghapus untuk detail log aktivitas
+      const [rows] = await db.execute('SELECT nama_kegiatan FROM rekapan_kegiatan WHERE id = ?', [id]);
+      const namaKegiatan = rows.length > 0 ? rows[0].nama_kegiatan : 'Tidak Diketahui';
+
+      const [result] = await db.execute('DELETE FROM rekapan_kegiatan WHERE id = ?', [id]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: 'Data rekapan tidak ditemukan' });
+      }
+
+      // Log aktivitas audit trail
+      const userId = req.user ? req.user.id : null;
+      await logActivity(
+        userId, 
+        'REKAPAN_INTERNAL', 
+        'DELETE', 
+        `Menghapus rekapan kegiatan "${namaKegiatan}" (ID: ${id})`
+      );
+
       res.status(200).json({ success: true, message: 'Rekapan berhasil dihapus' });
     } catch (error) {
       console.error(error);

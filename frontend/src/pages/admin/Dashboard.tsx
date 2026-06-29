@@ -24,6 +24,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { API_BASE_URL } from '../../config';
+import ActivityTimeline from '../../components/ActivityTimeline';
 
 interface SuratTrendItem {
   name: string;
@@ -521,19 +522,8 @@ const Dashboard: React.FC = () => {
               <p className="text-xs text-slate-400 font-medium">Aktivitas entri dan log sistem mutakhir</p>
             </div>
 
-            <div className="flex-1 space-y-6 overflow-y-auto pr-1">
-              {activities.map((act, index) => (
-                <div key={index} className={`flex gap-4 items-start group ${index >= 3 ? 'hidden sm:flex' : ''}`}>
-                  <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center ${act.iconBg || 'bg-slate-100 text-slate-500'}`}>
-                    {act.type === 'surat_masuk' ? <Mail size={18} /> : act.type === 'aset' ? <Monitor size={18} /> : act.type === 'kegiatan' ? <Activity size={18} /> : <AlertCircle size={18} />}
-                  </div>
-                  <div className="flex-1">
-                    <h5 className="text-xs font-bold text-slate-800 leading-snug group-hover:text-brand-primary transition-colors">{act.title}</h5>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">{act.subtitle}</p>
-                    <span className="inline-block text-[9px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md font-bold mt-2">{act.time}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="flex-1 overflow-y-auto pr-1 mt-2">
+              <ActivityTimeline limit={5} />
             </div>
           </div>
         </div>

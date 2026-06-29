@@ -144,9 +144,16 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     const method = data ? 'PUT' : 'POST';
 
     try {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(url, {
         method: method,
         body: formPayload,
+        headers: headers
       });
 
       if (response.ok) {

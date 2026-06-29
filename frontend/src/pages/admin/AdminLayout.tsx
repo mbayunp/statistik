@@ -22,7 +22,8 @@ import {
   ListChecks,
   Link as LinkIcon,
   Menu,
-  X
+  X,
+  History
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import logo from '../../assets/images/logo.png';
@@ -46,6 +47,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ];
 
   const midMenus = [
+    { name: 'Riwayat Aktivitas', path: '/admin/riwayat-aktivitas', icon: <History size={20} /> },
     { name: 'Rekapan Permohonan', path: '/admin/rekapan-permohonan', icon: <Database size={20} /> },
     { name: 'Publikasi Kegiatan', path: '/admin/kegiatan', icon: <Globe size={20} /> },
     { name: 'Surat Masuk', path: '/admin/surat/masuk', icon: <Mail size={20} />},

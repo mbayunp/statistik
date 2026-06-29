@@ -29,6 +29,7 @@ import FormulirList from './pages/admin/FormulirList';
 import FormBuilder from './pages/admin/FormBuilder';
 import FormulirResponses from './pages/admin/FormulirResponses';
 import ShortlinkList from './pages/admin/ShortlinkList';
+import ActivityLogPage from './pages/admin/ActivityLogPage';
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -100,6 +101,7 @@ const App: React.FC = () => {
           <Route path="formulir/builder" element={<FormBuilder />} />
           <Route path="formulir/responses/:formId" element={<FormulirResponses />} />
           <Route path="tautan" element={<ShortlinkList />} />
+          <Route path="riwayat-aktivitas" element={<ActivityLogPage />} />
         </Route>
 
         {/* 404 - Page Not Found */}

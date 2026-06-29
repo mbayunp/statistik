@@ -131,7 +131,12 @@ const RekapanKegiatan: React.FC = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`${API_BASE_URL}/api/rekapan/${id}`);
+          const token = localStorage.getItem('token');
+          await axios.delete(`${API_BASE_URL}/api/rekapan/${id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
           fetchKegiatan();
           Swal.fire('Terhapus!', 'Rekapan berhasil dihapus.', 'success');
         } catch {
