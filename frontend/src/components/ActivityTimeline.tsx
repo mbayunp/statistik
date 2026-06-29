@@ -38,7 +38,7 @@ const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLogs = async () => {
+  const fetchLogs = React.useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -54,20 +54,21 @@ const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
       } else {
         setError(response.data.message || 'Gagal memuat log aktivitas.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching logs:', err);
-      setError(
-        err.response?.data?.message || 
-        'Koneksi gagal. Pastikan Anda memiliki akses administrator.'
-      );
+      let message = 'Koneksi gagal. Pastikan Anda memiliki akses administrator.';
+      if (axios.isAxiosError(err) && err.response?.data?.message) {
+        message = err.response.data.message;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [moduleName]);
 
   useEffect(() => {
     fetchLogs();
-  }, [moduleName]);
+  }, [fetchLogs]);
 
   const formatRelativeTime = (dateString: string): string => {
     const date = new Date(dateString);
@@ -156,7 +157,7 @@ const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
 
   if (displayedLogs.length === 0) {
     return (
-      <div className="text-center py-16 px-4 bg-slate-50/50 border border-dashed border-slate-200 rounded-[2rem]">
+      <div className="text-center py-16 px-4 bg-slate-50/50 border border-dashed border-slate-200 rounded-4xl">
         <Info className="mx-auto text-slate-300 mb-3" size={40} />
         <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Belum Ada Riwayat</h4>
         <p className="text-[10px] text-slate-400 mt-1 font-medium">Semua log aktivitas akan tercatat secara otomatis di sini.</p>

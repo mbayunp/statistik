@@ -9,14 +9,12 @@ import {
   RefreshCw, 
   User, 
   Clock, 
-  ArrowUpDown, 
   PlusCircle, 
   Edit3, 
   Trash2, 
   Info,
   ChevronLeft,
-  ChevronRight,
-  Filter
+  ChevronRight
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { API_BASE_URL } from '../../config';
@@ -43,9 +41,9 @@ const ActivityLogPage: React.FC = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(15);
+  const itemsPerPage = 15;
 
-  const fetchLogs = async (silent = false) => {
+  const fetchLogs = React.useCallback(async (silent = false) => {
     try {
       if (!silent) {
         setLoading(true);
@@ -67,12 +65,16 @@ const ActivityLogPage: React.FC = () => {
       if (response.data.success) {
         setLogs(response.data.data || []);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching logs:', err);
+      let message = 'Terjadi kesalahan saat terhubung ke server.';
+      if (axios.isAxiosError(err) && err.response?.data?.message) {
+        message = err.response.data.message;
+      }
       Swal.fire({
         icon: 'error',
         title: 'Gagal Memuat Log',
-        text: err.response?.data?.message || 'Terjadi kesalahan saat terhubung ke server.',
+        text: message,
         confirmButtonColor: '#00D2B4',
         customClass: {
           popup: 'rounded-3xl shadow-2xl border border-slate-100'
@@ -82,12 +84,12 @@ const ActivityLogPage: React.FC = () => {
       setLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [selectedPeriod, selectedModule]);
 
   useEffect(() => {
     fetchLogs();
     setCurrentPage(1);
-  }, [selectedPeriod, selectedModule]);
+  }, [fetchLogs]);
 
   const formatTanggalKalender = (tanggalString: string) => {
     const dateObj = new Date(tanggalString);
@@ -221,7 +223,7 @@ const ActivityLogPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-4 flex-1">
           {/* Filter Periode */}
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
               <Calendar size={12} /> Filter Waktu
             </label>
             <select 
@@ -237,7 +239,7 @@ const ActivityLogPage: React.FC = () => {
 
           {/* Filter Modul */}
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
               <Layers size={12} /> Filter Modul
             </label>
             <select 
@@ -262,7 +264,7 @@ const ActivityLogPage: React.FC = () => {
 
         {/* Input Pencarian */}
         <div className="w-full lg:max-w-md">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
             <Search size={12} /> Cari Aktivitas
           </label>
           <div className="relative">
