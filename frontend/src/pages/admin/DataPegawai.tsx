@@ -309,48 +309,48 @@ const DataPegawai: React.FC = () => {
 
       {/* MODAL FORM TETAP SAMA */}
       {showModal && (
-        <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-left overflow-y-auto">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl animate-in zoom-in duration-300 overflow-hidden my-auto">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">
+        <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 text-left overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-2xl sm:rounded-[2.5rem] shadow-2xl animate-in zoom-in duration-300 overflow-hidden my-auto">
+            <div className="p-4 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h2 className="text-lg sm:text-xl font-black text-slate-800 uppercase tracking-tight">
                 {editMode ? 'Edit Data Pegawai' : 'Tambah Pegawai Baru'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl">✕</button>
             </div>
-            <form onSubmit={handleSubmit} className="p-8 space-y-5">
-              <div className="grid grid-cols-1 gap-5">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">NIP (Opsional)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">NIP (Opsional)</label>
                   <input 
-                    type="text" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
+                    type="text" className="w-full px-4 py-3 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
                     value={formData.nip} onChange={(e) => setFormData({...formData, nip: e.target.value})}
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Nama Lengkap</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nama Lengkap</label>
                   <input 
-                    required type="text" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
+                    required type="text" className="w-full px-4 py-3 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
                     value={formData.nama} onChange={(e) => setFormData({...formData, nama: e.target.value})}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Jabatan</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Jabatan</label>
                     <input 
-                      type="text" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
+                      type="text" className="w-full px-4 py-3 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
                       value={formData.jabatan} onChange={(e) => setFormData({...formData, jabatan: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Golongan</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Golongan</label>
                     <input 
-                      type="text" placeholder="Contoh: IV/a" className="w-full px-5 py-4 bg-slate-100 rounded-2xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
+                      type="text" placeholder="Contoh: IV/a" className="w-full px-4 py-3 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
                       value={formData.golongan} onChange={(e) => setFormData({...formData, golongan: e.target.value})}
                     />
                   </div>
                 </div>
               </div>
-              <button type="submit" className="w-full bg-brand-dark text-white py-5 rounded-4xl font-black text-xs uppercase tracking-[0.2em] hover:bg-brand-primary transition-all shadow-xl active:scale-[0.98] mt-4">
+              <button type="submit" className="w-full bg-brand-dark text-white py-4 rounded-xl font-black text-xs uppercase tracking-[0.15em] hover:bg-brand-primary transition-all shadow-md active:scale-[0.98] mt-3 cursor-pointer">
                 {editMode ? 'Simpan Perubahan' : 'Daftarkan Pegawai'}
               </button>
             </form>

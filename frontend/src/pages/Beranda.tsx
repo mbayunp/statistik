@@ -53,20 +53,20 @@ const Beranda: React.FC = () => {
   
   // State statistik dinamis dari API Garut Satu Data
   const [statsData, setStatsData] = useState<GarutSatuDataStats>({
-    dataset: 671,      
-    data: 2186,        
-    visualisasi: 9,    
-    infografis: 161   
+    dataset: 0,      
+    data: 0,        
+    visualisasi: 0,    
+    infografis: 0   
   });
 
-  // State data kependudukan (tetap dipertahankan)
+  // State data kependudukan (diambil dinamis dari API pengaturan)
   const [pengaturan, setPengaturan] = useState<PengaturanData>({
-    jumlah_penduduk: 2921690,
-    jumlah_kepala_keluarga: 948821,
-    jumlah_laki: 1494645,
-    jumlah_perempuan: 1427045,
-    permohonan_data: '1',
-    sumber: 'Berdasarkan DKB Semester II Tahun 2025'
+    jumlah_penduduk: 0,
+    jumlah_kepala_keluarga: 0,
+    jumlah_laki: 0,
+    jumlah_perempuan: 0,
+    permohonan_data: '0',
+    sumber: ''
   });
 
   const datasetGrowth = [
@@ -101,24 +101,27 @@ const Beranda: React.FC = () => {
     // 2. Ambil data gabungan dari API eksternal
     const fetchCountsAndPengaturan = async () => {
       try {
-        const [resPengaturan, resPermohonan] = await Promise.all([
-          axios.get('/api-garut/api/pengaturan').catch(() => ({ data: null })),
-          axios.get('/api-garut/api/request-data/total').catch(() => ({ data: null }))
+        const [resPengaturan, resCount] = await Promise.all([
+          axios.get('/api-garut/api/pengaturan').catch(() => axios.get('https://satudata-api.garutkab.go.id/api/pengaturan')).catch(() => ({ data: null })),
+          axios.get('/api-garut/api/count').catch(() => axios.get('https://satudata-api.garutkab.go.id/api/count')).catch(() => ({ data: null }))
         ]);
         
-        if (resPermohonan && resPermohonan.data) {
-          const apiStats = resPermohonan.data.data || resPermohonan.data;
+        if (resCount && resCount.data) {
+          const apiStats = typeof resCount.data.dataset !== 'undefined' ? resCount.data : (resCount.data.data || resCount.data);
           
           setStatsData({
-            dataset: apiStats.dataset > 0 ? Number(apiStats.dataset) : 671,
-            data: apiStats.data > 0 ? Number(apiStats.data) : 2186,
-            visualisasi: apiStats.visualisasi >= 0 ? Number(apiStats.visualisasi) : 9,
-            infografis: apiStats.infografis >= 0 ? Number(apiStats.infografis) : 161
+            dataset: Number(apiStats.dataset) || 0,
+            data: Number(apiStats.data) || 0,
+            visualisasi: Number(apiStats.visualisasi) || 0,
+            infografis: Number(apiStats.infografis) || 0
           });
         }
 
-        if (resPengaturan && resPengaturan.data?.success && resPengaturan.data?.data) {
-          setPengaturan(resPengaturan.data.data);
+        if (resPengaturan && resPengaturan.data) {
+          const pengObj = resPengaturan.data.data || resPengaturan.data;
+          if (pengObj && pengObj.jumlah_penduduk) {
+            setPengaturan(pengObj);
+          }
         }
       } catch (e) {
         console.error("Gagal menyinkronkan data gabungan:", e);
@@ -174,43 +177,43 @@ const Beranda: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#001D1E] transition-colors duration-300">
+    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       
       {/* 1️⃣ HERO SECTION */}
-      <section className="relative pt-32 pb-24 lg:pt-40 lg:pb-32 bg-linear-to-br from-brand-dark to-slate-900 dark:from-[#001D1E] dark:to-brand-dark text-white overflow-hidden border-b border-white/5">
-        <div className="container mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center text-left">
+      <section className="relative pt-24 pb-20 lg:pt-32 lg:pb-28 bg-slate-900 dark:bg-slate-950 text-white overflow-hidden border-b border-slate-800">
+        <div className="container mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center text-left">
           
           <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-brand-primary text-xs font-black uppercase tracking-widest animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-brand-primary"></span> Satu Data Garut
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-extrabold uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Satu Data Garut
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight">
-              Mewujudkan Satu Data yang <span className="text-brand-primary italic">Akurat & Terintegrasi</span>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white">
+              Mewujudkan Satu Data yang <span className="text-emerald-400 font-black">Akurat & Terintegrasi</span>
             </h1>
-            <p className="text-base md:text-lg text-slate-300 max-w-2xl font-medium leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-slate-300 max-w-2xl font-medium leading-relaxed">
               Dinas Komunikasi dan Informatika Kabupaten Garut mengoordinasikan pengelolaan data statistik sektoral demi pembangunan daerah yang akuntabel dan berbasis data.
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row items-center gap-3.5 pt-2">
               <a 
                 href="https://satudata.garutkab.go.id/" 
                 target="_blank" 
                 rel="noreferrer" 
-                className="w-full sm:w-auto bg-brand-primary hover:bg-white hover:text-brand-dark text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3"
+                className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-7 py-3.5 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 shadow-xs"
               >
                 <img src="/gsd.png" alt="Logo GSD" className="w-5 h-5 object-contain" /> 
                 Kunjungi Portal Satu Data
               </a>
-              <a href="#kegiatan" className="w-full sm:w-auto bg-white/10 hover:bg-white/20 border border-white/15 backdrop-blur-md text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+              <a href="#kegiatan" className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-7 py-3.5 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2">
                 Lihat Kegiatan
               </a>
             </div>
           </div>
 
           <div className="lg:col-span-5 relative hidden lg:block">
-            <div className="absolute top-4 left-4 z-20 bg-brand-dark/70 dark:bg-brand-dark/70 backdrop-blur-xl border border-white/10 rounded-3xl p-6 w-56 shadow-2xl animate-float">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2.5 bg-brand-primary/10 rounded-xl text-brand-primary">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-2xl p-6 shadow-md w-full">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
                   <Activity size={20} />
                 </div>
                 <div>
@@ -218,42 +221,32 @@ const Beranda: React.FC = () => {
                   <p className="text-xs font-bold text-emerald-400">Aktif Real-time</p>
                 </div>
               </div>
-              <h3 className="text-2xl font-black text-white">{statsData.dataset.toLocaleString('id-ID')} Dataset</h3>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">Terverifikasi Diskominfo</p>
-            </div>
-
-            <div className="w-full h-[400px] flex items-center justify-center relative animate-float-delayed">
-              <svg className="w-80 h-80 text-brand-primary/20" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="2" strokeDasharray="6 6" />
-                <circle cx="100" cy="100" r="50" stroke="currentColor" strokeWidth="1" />
-                <line x1="100" y1="20" x2="100" y2="100" stroke="currentColor" strokeWidth="1.5" />
-                <line x1="50" y1="150" x2="100" y2="100" stroke="currentColor" strokeWidth="1.5" />
-                <line x1="150" y1="150" x2="100" y2="100" stroke="currentColor" strokeWidth="1.5" />
-              </svg>
+              <h3 className="text-3xl font-black text-white">{statsData.dataset.toLocaleString('id-ID')} Dataset</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Terverifikasi Diskominfo Garut</p>
             </div>
           </div>
         </div>
 
         {/* TICKER BERJALAN (Lengkap Kependudukan + Statistik) */}
-        <div className="absolute bottom-0 left-0 right-0 bg-brand-dark/40 dark:bg-black/20 backdrop-blur-md border-t border-white/5 py-3 overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 bg-slate-950/80 border-t border-slate-800 py-3 overflow-hidden">
           <div className="flex whitespace-nowrap animate-ticker">
-            <div className="flex gap-16 text-xs font-black tracking-widest text-slate-400 uppercase">
-              <span>🚀 GARUT SATU DATA</span>
-              <span>👥 TOTAL PENDUDUK: {pengaturan.jumlah_penduduk.toLocaleString('id-ID')} JIWA</span>
-              <span>🏠 KEPALA KELUARGA: {pengaturan.jumlah_kepala_keluarga.toLocaleString('id-ID')} KK</span>
-              <span>👨 LAKI-LAKI: {pengaturan.jumlah_laki.toLocaleString('id-ID')}</span>
-              <span>👩 PEREMPUAN: {pengaturan.jumlah_perempuan.toLocaleString('id-ID')}</span>
-              <span>📊 DATASET: {statsData.dataset.toLocaleString('id-ID')}</span>
-              <span>🗂️ DATA: {statsData.data.toLocaleString('id-ID')}</span>
+            <div className="flex gap-12 text-xs font-bold tracking-wider text-slate-400 uppercase">
+              <span>GARUT SATU DATA</span>
+              <span>TOTAL PENDUDUK: {pengaturan.jumlah_penduduk.toLocaleString('id-ID')} JIWA</span>
+              <span>KEPALA KELUARGA: {pengaturan.jumlah_kepala_keluarga.toLocaleString('id-ID')} KK</span>
+              <span>LAKI-LAKI: {pengaturan.jumlah_laki.toLocaleString('id-ID')}</span>
+              <span>PEREMPUAN: {pengaturan.jumlah_perempuan.toLocaleString('id-ID')}</span>
+              <span>DATASET: {statsData.dataset.toLocaleString('id-ID')}</span>
+              <span>DATA: {statsData.data.toLocaleString('id-ID')}</span>
             </div>
-            <div className="flex gap-16 text-xs font-black tracking-widest text-slate-400 uppercase ml-16">
-              <span>🚀 GARUT SATU DATA</span>
-              <span>👥 TOTAL PENDUDUK: {pengaturan.jumlah_penduduk.toLocaleString('id-ID')} JIWA</span>
-              <span>🏠 KEPALA KELUARGA: {pengaturan.jumlah_kepala_keluarga.toLocaleString('id-ID')} KK</span>
-              <span>👨 LAKI-LAKI: {pengaturan.jumlah_laki.toLocaleString('id-ID')}</span>
-              <span>👩 PEREMPUAN: {pengaturan.jumlah_perempuan.toLocaleString('id-ID')}</span>
-              <span>📊 DATASET: {statsData.dataset.toLocaleString('id-ID')}</span>
-              <span>🗂️ DATA: {statsData.data.toLocaleString('id-ID')}</span>
+            <div className="flex gap-12 text-xs font-bold tracking-wider text-slate-400 uppercase ml-12">
+              <span>GARUT SATU DATA</span>
+              <span>TOTAL PENDUDUK: {pengaturan.jumlah_penduduk.toLocaleString('id-ID')} JIWA</span>
+              <span>KEPALA KELUARGA: {pengaturan.jumlah_kepala_keluarga.toLocaleString('id-ID')} KK</span>
+              <span>LAKI-LAKI: {pengaturan.jumlah_laki.toLocaleString('id-ID')}</span>
+              <span>PEREMPUAN: {pengaturan.jumlah_perempuan.toLocaleString('id-ID')}</span>
+              <span>DATASET: {statsData.dataset.toLocaleString('id-ID')}</span>
+              <span>DATA: {statsData.data.toLocaleString('id-ID')}</span>
             </div>
           </div>
         </div>
@@ -271,22 +264,21 @@ const Beranda: React.FC = () => {
       </section>
 
       {/* 3️⃣ LIVE DATA DASHBOARD */}
-      <section className="py-20 bg-slate-50 dark:bg-[#001D1E]/40 border-y border-slate-100 dark:border-white/5 transition-colors duration-300">
+      <section className="py-16 sm:py-20 bg-slate-50 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div className="container mx-auto px-6 max-w-6xl">
-          <div className="text-center mb-12">
-            <span className="text-[10px] font-black text-brand-primary uppercase tracking-[0.2em] bg-brand-primary/10 border border-brand-primary/20 px-4 py-1.5 rounded-full">Live Analytics</span>
-            <h2 className="text-3xl font-black text-brand-dark dark:text-white uppercase tracking-tight mt-4">Dashboard Tren Data Sektoral</h2>
-            <div className="h-1.5 w-20 bg-brand-primary mx-auto mt-4 rounded-full"></div>
+          <div className="text-center mb-10">
+            <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-3.5 py-1.5 rounded-lg">Live Analytics</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight mt-3">Dashboard Tren Data Sektoral</h2>
           </div>
 
-          <div className="bg-white dark:bg-brand-dark p-6 rounded-[2.5rem] shadow-xl border border-slate-200/50 dark:border-white/5">
-            <div className="h-72 w-full">
+          <div className="bg-white dark:bg-slate-950 p-5 sm:p-8 rounded-2xl shadow-xs border border-slate-200 dark:border-slate-800">
+            <div className="h-64 sm:h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={datasetGrowth} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="tahun" stroke="#94a3b8" fontSize={11} fontWeight="bold" />
                   <YAxis stroke="#94a3b8" fontSize={11} fontWeight="bold" />
-                  <Tooltip contentStyle={{ backgroundColor: '#002B2D', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }} />
-                  <Area type="monotone" dataKey="dataset" stroke="#00D2B4" strokeWidth={3} fill="#00D2B4" fillOpacity={0.1} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }} />
+                  <Area type="monotone" dataKey="dataset" stroke="#10b981" strokeWidth={3} fill="#10b981" fillOpacity={0.15} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -295,21 +287,21 @@ const Beranda: React.FC = () => {
       </section>
 
       {/* 4️⃣ TUGAS & FUNGSI */}
-      <section className="py-24 bg-white dark:bg-brand-dark transition-colors duration-300">
+      <section className="py-20 bg-white dark:bg-slate-950 transition-colors duration-300">
         <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-black text-center text-brand-dark dark:text-white uppercase tracking-tight mb-16">Tugas & Fungsi Utama</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <h2 className="text-2xl sm:text-3xl font-black text-center text-slate-900 dark:text-white uppercase tracking-tight mb-12">Tugas & Fungsi Utama</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: <Database size={36} />, title: "Koordinasi Data Sektoral", bg: "bg-blue-50 dark:bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
-              { icon: <CheckCircle size={36} />, title: "Integrasi & Validasi Data", bg: "bg-emerald-50 dark:bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400" },
-              { icon: <BarChart3 size={36} />, title: "Publikasi Statistik Daerah", bg: "bg-teal-50 dark:bg-teal-500/10", text: "text-teal-600 dark:text-teal-400" },
-              { icon: <Search size={36} />, title: "Monitoring & Evaluasi Data", bg: "bg-purple-50 dark:bg-purple-500/10", text: "text-purple-600 dark:text-purple-400" }
+              { icon: <Database size={32} />, title: "Koordinasi Data Sektoral", bg: "bg-blue-50 dark:bg-blue-950/50", text: "text-blue-600 dark:text-blue-400" },
+              { icon: <CheckCircle size={32} />, title: "Integrasi & Validasi Data", bg: "bg-emerald-50 dark:bg-emerald-950/50", text: "text-emerald-600 dark:text-emerald-400" },
+              { icon: <BarChart3 size={32} />, title: "Publikasi Statistik Daerah", bg: "bg-teal-50 dark:bg-teal-950/50", text: "text-teal-600 dark:text-teal-400" },
+              { icon: <Search size={32} />, title: "Monitoring & Evaluasi Data", bg: "bg-purple-50 dark:bg-purple-950/50", text: "text-purple-600 dark:text-purple-400" }
             ].map((item, index) => (
-              <div key={index} className="p-8 rounded-[2.5rem] text-center glass-card hover-lift transition-all group">
-                <div className={`w-18 h-18 mx-auto ${item.bg} ${item.text} rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-all`}>
+              <div key={index} className="p-6 rounded-2xl text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-colors group">
+                <div className={`w-16 h-16 mx-auto ${item.bg} ${item.text} rounded-2xl flex items-center justify-center mb-5 group-hover:scale-105 transition-transform`}>
                   {item.icon}
                 </div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white leading-tight">{item.title}</h3>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">{item.title}</h3>
               </div>
             ))}
           </div>
@@ -317,29 +309,29 @@ const Beranda: React.FC = () => {
       </section>
 
       {/* 5️⃣ PROGRAM UNGGULAN */}
-      <section className="py-24 bg-slate-50 dark:bg-[#001D1E]/40 border-y border-slate-100 dark:border-white/5 transition-colors duration-300">
-        <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+      <section className="py-20 bg-slate-50 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 transition-colors duration-300">
+        <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-xs uppercase tracking-widest mb-6">
-              Program Utama 🌟
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400 font-bold text-xs uppercase tracking-wider mb-4">
+              Program Utama
             </div>
-            <h2 className="text-3xl md:text-4xl font-black text-brand-dark dark:text-white mb-6 leading-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4 leading-tight">
               Implementasi Satu Data Indonesia di Kabupaten Garut
             </h2>
           </div>
           
-          <div className="grid gap-4">
+          <div className="grid gap-3.5">
             {[
               { title: "Portal Satu Data Garut", desc: "Akses dataset terbuka Kabupaten Garut", link: "https://satudata.garutkab.go.id/" },
               { title: "Rekapan Kegiatan Statistik", desc: "Dokumentasi & pelaporan kegiatan sektoral", link: "#kegiatan" }
             ].map((btn, i) => (
-              <a key={i} href={btn.link} className="flex items-center justify-between bg-white dark:bg-brand-dark p-6 rounded-3xl border border-slate-200/50 dark:border-white/5 hover:border-brand-primary hover:bg-brand-primary/5 transition-all group">
+              <a key={i} href={btn.link} className="flex items-center justify-between bg-white dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 transition-colors group">
                 <div>
-                  <h3 className="text-lg font-black text-brand-dark dark:text-white group-hover:text-brand-primary transition-colors">{btn.title}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{btn.desc}</p>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{btn.title}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{btn.desc}</p>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-all">
-                  <ArrowRight size={20} className="text-slate-400 group-hover:text-white" />
+                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0">
+                  <ArrowRight size={18} className="text-slate-500 dark:text-slate-400 group-hover:text-white" />
                 </div>
               </a>
             ))}
@@ -347,33 +339,32 @@ const Beranda: React.FC = () => {
         </div>
       </section>
 
-      {/* 6️⃣ CARDS GRID STATISTIK PORTAL (Murni mengambil data dari screenshot) */}
-      <section className="py-20 bg-slate-100 dark:bg-brand-dark/60 transition-colors duration-300">
+      {/* 6️⃣ CARDS GRID STATISTIK PORTAL */}
+      <section className="py-20 bg-white dark:bg-slate-950 transition-colors duration-300">
         <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-black text-brand-dark dark:text-white uppercase tracking-wider">
-              Statistik <span className="text-brand-primary">Satu Data Garut</span>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-wider">
+              Statistik <span className="text-emerald-600 dark:text-emerald-400">Satu Data Garut</span>
             </h2>
-            <p className="mx-auto mt-3 mb-6 w-16 border-b-4 border-brand-primary rounded-full"></p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {statistikItems.map((item, index) => (
-              <div key={index} className="flex w-full flex-col gap-4 rounded-3xl p-6 text-center text-slate-800 dark:text-white glass-card hover-lift hover:ring-2 hover:ring-brand-primary/20 transition-all">
-                <div className="w-12 h-12 mx-auto rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center">
+              <div key={index} className="flex w-full flex-col gap-3 rounded-2xl p-6 text-center text-slate-800 dark:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="w-11 h-11 mx-auto rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                   {item.icon}
                 </div>
-                <h3 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white">
+                <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
                   {item.count.toLocaleString('id-ID')}
                 </h3>
-                <div className="text-sm font-black uppercase tracking-wider text-brand-dark dark:text-brand-primary">
+                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-emerald-400">
                   {item.label}
                 </div>
-                <p className="flex-1 text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed px-2">
+                <p className="flex-1 text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
                   {item.desc}
                 </p>
-                <a href={item.link} target="_blank" rel="noreferrer" className="mt-4 block group/btn">
-                  <div className="flex cursor-pointer flex-row items-center justify-center gap-2 rounded-2xl bg-slate-50 py-3 text-xs font-black uppercase tracking-widest text-slate-600 transition-colors duration-300 group-hover/btn:bg-brand-primary group-hover/btn:text-white dark:bg-white/5 dark:text-slate-300">
+                <a href={item.link} target="_blank" rel="noreferrer" className="mt-3 block group/btn">
+                  <div className="flex cursor-pointer flex-row items-center justify-center gap-2 rounded-xl bg-slate-100 py-2.5 text-xs font-extrabold uppercase tracking-wider text-slate-700 transition-colors group-hover/btn:bg-emerald-500 group-hover/btn:text-white dark:bg-slate-800 dark:text-slate-300">
                     <span>Lihat Selengkapnya</span>
                     <ArrowRight size={14} className="transition-transform duration-300 group-hover/btn:translate-x-1" />
                   </div>
@@ -385,41 +376,40 @@ const Beranda: React.FC = () => {
       </section>
 
       {/* 7️⃣ KEGIATAN TERBARU */}
-      <section id="kegiatan" className="py-24 bg-slate-50 dark:bg-[#001D1E]/40 transition-colors duration-300">
+      <section id="kegiatan" className="py-20 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
             <div>
-              <h2 className="text-3xl font-black text-brand-dark dark:text-white uppercase tracking-tight">Kegiatan Terbaru</h2>
-              <div className="h-1.5 w-20 bg-brand-primary mt-4 rounded-full"></div>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Kegiatan Terbaru</h2>
             </div>
-            <Link to="/kegiatan" className="flex items-center gap-2 bg-white dark:bg-brand-dark px-6 py-3 rounded-full border border-slate-200/50 text-brand-dark dark:text-white font-black text-xs uppercase tracking-widest hover:border-brand-primary hover:text-brand-primary transition-all shadow-sm">
+            <Link to="/kegiatan" className="flex items-center gap-2 bg-white dark:bg-slate-950 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white font-extrabold text-xs uppercase tracking-wider hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-xs">
               Lihat Semua <ArrowRight size={16} />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {kegiatan.length > 0 ? kegiatan.map((item) => (
-              <div key={item.id} className="bg-white dark:bg-brand-dark rounded-4xl p-4 shadow-sm border border-slate-100 dark:border-white/5 group hover:shadow-xl transition-all duration-300 flex flex-col">
-                <div className="relative overflow-hidden rounded-4xl h-60 mb-6 bg-slate-100">
-                  <img src={getImageUrl(item.dokumentasi)} alt={item.nama_kegiatan} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { e.currentTarget.src = "https://placehold.co/600x400?text=File+Tidak+Ditemukan"; }} />
-                  <span className="absolute top-4 right-4 bg-brand-dark/80 backdrop-blur-md text-white text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest">
+              <div key={item.id} className="bg-white dark:bg-slate-950 rounded-2xl p-4 shadow-xs border border-slate-200 dark:border-slate-800 group hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col">
+                <div className="relative overflow-hidden rounded-xl h-52 mb-4 bg-slate-100 dark:bg-slate-900">
+                  <img src={getImageUrl(item.dokumentasi)} alt={item.nama_kegiatan} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.src = "https://placehold.co/600x400?text=File+Tidak+Ditemukan"; }} />
+                  <span className="absolute top-3 right-3 bg-slate-900/90 text-white text-[10px] font-extrabold px-3 py-1 rounded-md uppercase tracking-wider">
                     {item.tipe || 'UMUM'}
                   </span>
                 </div>
-                <div className="px-4 pb-4">
-                  <p className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
+                <div className="px-1 pb-2">
+                  <p className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     {formatTanggal(item.tanggal)}
                   </p>
-                  <h3 className="text-xl font-black text-slate-800 dark:text-white mb-4 line-clamp-2 leading-tight">
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-2 line-clamp-2 leading-snug">
                     {item.nama_kegiatan}
                   </h3>
                 </div>
               </div>
             )) : (
-              <div className="col-span-full bg-white dark:bg-brand-dark rounded-[3rem] p-12 text-center border border-slate-100 dark:border-white/5 shadow-sm">
-                <Search className="mx-auto mb-4 text-slate-200" size={48} />
-                <p className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Memuat Kegiatan...</p>
+              <div className="col-span-full bg-white dark:bg-slate-950 rounded-2xl p-10 text-center border border-slate-200 dark:border-slate-800 shadow-xs">
+                <Search className="mx-auto mb-3 text-slate-300" size={40} />
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Memuat Kegiatan...</p>
               </div>
             )}
           </div>
@@ -427,16 +417,16 @@ const Beranda: React.FC = () => {
       </section>
 
       {/* 8️⃣ INSTAGRAM FEED */}
-      <section className="py-24 bg-white dark:bg-brand-dark border-t border-slate-100 dark:border-white/5 transition-colors duration-300">
+      <section className="py-20 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div className="container mx-auto px-6 text-center">
-          <div className="inline-flex items-center justify-center p-4 bg-pink-50 dark:bg-pink-500/10 text-pink-500 rounded-3xl mb-6">
-            <Instagram size={32} />
+          <div className="inline-flex items-center justify-center p-3 bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 rounded-2xl mb-4">
+            <Instagram size={28} />
           </div>
-          <h2 className="text-3xl font-black text-brand-dark dark:text-white uppercase tracking-tight mb-4">Instagram Feed</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-8">Instagram Feed</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
             {instagramMockups.map((imgUrl, idx) => (
-              <a href="https://www.instagram.com/garutsatudata/" target="_blank" rel="noreferrer" key={idx} className="aspect-square bg-slate-100 rounded-3xl overflow-hidden relative group cursor-pointer block border border-slate-100 dark:border-white/5 shadow-sm">
-                <img src={imgUrl} alt={`Instagram Feed ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { e.currentTarget.src = "https://placehold.co/400x400?text=Gambar+Tidak+Ditemukan"; }} />
+              <a href="https://www.instagram.com/garutsatudata/" target="_blank" rel="noreferrer" key={idx} className="aspect-square bg-slate-100 dark:bg-slate-900 rounded-2xl overflow-hidden relative group cursor-pointer block border border-slate-200 dark:border-slate-800 shadow-xs">
+                <img src={imgUrl} alt={`Instagram Feed ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.src = "https://placehold.co/400x400?text=Gambar+Tidak+Ditemukan"; }} />
               </a>
             ))}
           </div>

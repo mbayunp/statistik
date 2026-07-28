@@ -80,7 +80,7 @@ const Footer: React.FC = () => {
             <p>Bidang Statistik Sektoral</p>
             {/* Penambahan Versi Aplikasi */}
             <span className="bg-white/10 px-2 py-0.5 rounded text-[8px] tracking-widest text-brand-primary">
-              v1.2
+              v1.5
             </span>
           </div>
         </div>

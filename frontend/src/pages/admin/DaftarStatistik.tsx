@@ -241,8 +241,9 @@ const DaftarStatistikAdmin: React.FC = () => {
             </div>
 
             {/* TABEL DATA */}
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-                <div className="overflow-x-auto">
+            <div className="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+                {/* Versi Desktop (Tabel) */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left whitespace-nowrap">
                         <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
                             <tr>
@@ -297,6 +298,56 @@ const DaftarStatistikAdmin: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Versi Mobile (Card List) */}
+                <div className="block md:hidden divide-y divide-slate-100">
+                    {loading ? (
+                        <div className="p-10 text-center font-bold text-slate-400 animate-pulse">Memuat data...</div>
+                    ) : currentItems.length > 0 ? (
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        currentItems.map((item: any, index: number) => (
+                            <div key={item.id} className="p-4 sm:p-5 space-y-3 text-left">
+                                <div className="flex justify-between items-start gap-3">
+                                    <div className="flex-1">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">STAT-{item.id} • {item.tahun}</span>
+                                        <h4 className="font-bold text-slate-800 text-sm leading-snug">{item.nama_kegiatan}</h4>
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-400 shrink-0">
+                                        #{indexOfFirstItem + index + 1}
+                                    </span>
+                                </div>
+
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs space-y-2">
+                                    <div className="flex justify-between text-slate-600 gap-2">
+                                        <span className="text-slate-400 font-medium shrink-0">Produsen:</span>
+                                        <span className="font-semibold text-slate-700 text-right truncate">{item.produsen_data || '-'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-1.5 border-t border-slate-200/50">
+                                        <span className="text-slate-400 font-medium">Status Rekomendasi:</span>
+                                        {item.sudah_mendapat_rekomendasi ? 
+                                            <span className="bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase flex items-center gap-1"><Check size={10}/> Diterima</span> : 
+                                            <span className="bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase">Proses</span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end items-center gap-2 pt-1">
+                                    <button onClick={() => { setSelectedItem(item); setShowDetail(true); }} className="px-3 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl text-xs font-bold flex items-center gap-1">
+                                        <Eye size={14}/> Detail
+                                    </button>
+                                    <button onClick={() => { setFormData(item); setShowModal(true); }} className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1">
+                                        <Edit size={14}/> Edit
+                                    </button>
+                                    <button onClick={() => handleDelete(item.id)} className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1">
+                                        <Trash2 size={14}/> Hapus
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="p-10 text-center text-slate-400 font-medium">Tidak ada data ditemukan.</div>
+                    )}
+                </div>
             </div>
 
             {/* PAGINATION */}
@@ -312,21 +363,21 @@ const DaftarStatistikAdmin: React.FC = () => {
 
             {/* MODAL 1: DETAIL LANDSCAPE (READ ONLY) */}
             {showDetail && selectedItem && (
-                <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
-                    <div className="bg-white w-full max-w-6xl rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-300">
-                        <div className="flex justify-between items-center mb-8 pb-6 border-b border-slate-100">
+                <div className="fixed inset-0 z-110 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-md overflow-y-auto">
+                    <div className="bg-white w-full max-w-6xl rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 md:p-10 shadow-2xl animate-in zoom-in duration-300 max-h-[90vh] flex flex-col justify-between my-auto">
+                        <div className="flex justify-between items-center mb-4 sm:mb-8 pb-4 border-b border-slate-100">
                             <div>
-                                <h2 className="text-2xl font-black uppercase text-slate-800 tracking-tight">Detail Lengkap Kegiatan</h2>
-                                <p className="text-slate-400 text-[10px] font-black mt-1 uppercase tracking-widest">ID Kegiatan: STAT-{selectedItem.id}</p>
+                                <h2 className="text-lg sm:text-2xl font-black uppercase text-slate-800 tracking-tight">Detail Lengkap Kegiatan</h2>
+                                <p className="text-slate-400 text-[10px] font-black mt-0.5 uppercase tracking-widest">ID Kegiatan: STAT-{selectedItem.id}</p>
                             </div>
-                            <button onClick={() => setShowDetail(false)} className="p-4 bg-slate-100 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-all"><X size={24}/></button>
+                            <button onClick={() => setShowDetail(false)} className="p-2 sm:p-4 bg-slate-100 rounded-xl sm:rounded-2xl hover:bg-red-50 hover:text-red-500 transition-all"><X size={20}/></button>
                         </div>
 
                         {/* GRID LANDSCAPE 3 KOLOM */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
-                            <div className="bg-slate-50 p-8 rounded-4xl border border-slate-100 h-full">
-                                <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.2em] mb-6 flex items-center gap-2"><FileText size={18}/> Informasi Identitas</h3>
-                                <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                            <div className="bg-slate-50 p-5 sm:p-8 rounded-2xl sm:rounded-4xl border border-slate-100 h-full">
+                                <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.2em] mb-4 sm:mb-6 flex items-center gap-2"><FileText size={18}/> Informasi Identitas</h3>
+                                <div className="space-y-3.5">
                                     <DetailItem label="Nama Kegiatan" value={selectedItem.nama_kegiatan} />
                                     <DetailItem label="Tahun" value={selectedItem.tahun} />
                                     <DetailItem label="Produsen Data" value={selectedItem.produsen_data} />
@@ -335,9 +386,9 @@ const DaftarStatistikAdmin: React.FC = () => {
                                     <DetailItem label="Jenis Dokumen" value={selectedItem.jenis_dokumen_perencanaan} />
                                 </div>
                             </div>
-                            <div className="bg-slate-50 p-8 rounded-4xl border border-slate-100 h-full">
-                                <h3 className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-6 flex items-center gap-2"><ClipboardCheck size={18}/> Rekomendasi & Metadata</h3>
-                                <div className="space-y-4">
+                            <div className="bg-slate-50 p-5 sm:p-8 rounded-2xl sm:rounded-4xl border border-slate-100 h-full">
+                                <h3 className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-4 sm:mb-6 flex items-center gap-2"><ClipboardCheck size={18}/> Rekomendasi & Metadata</h3>
+                                <div className="space-y-3.5">
                                     <DetailItem label="Sudah Meminta Rekom" value={selectedItem.sudah_meminta_rekomendasi} isBadge />
                                     <DetailItem label="Sudah Mendapat Rekom" value={selectedItem.sudah_mendapat_rekomendasi} isBadge />
                                     <DetailItem label="Nomor Rekomendasi" value={selectedItem.nomor_identitas_rekomendasi} />
@@ -346,9 +397,9 @@ const DaftarStatistikAdmin: React.FC = () => {
                                     <DetailItem label="Metadata Indikator" value={selectedItem.ada_metadata_indikator} isBadge />
                                 </div>
                             </div>
-                            <div className="bg-slate-50 p-8 rounded-4xl border border-slate-100 h-full">
-                                <h3 className="text-[11px] font-black text-amber-600 uppercase tracking-[0.2em] mb-6 flex items-center gap-2"><BarChart3 size={18}/> Teknis & Diseminasi</h3>
-                                <div className="space-y-4">
+                            <div className="bg-slate-50 p-5 sm:p-8 rounded-2xl sm:rounded-4xl border border-slate-100 h-full">
+                                <h3 className="text-[11px] font-black text-amber-600 uppercase tracking-[0.2em] mb-4 sm:mb-6 flex items-center gap-2"><BarChart3 size={18}/> Teknis & Diseminasi</h3>
+                                <div className="space-y-3.5">
                                     <DetailItem label="Jumlah Variabel" value={selectedItem.jumlah_variabel} />
                                     <DetailItem label="Jumlah Indikator" value={selectedItem.jumlah_indikator} />
                                     <DetailItem label="Standar Data" value={selectedItem.memenuhi_standar_data} isBadge />
@@ -359,11 +410,11 @@ const DaftarStatistikAdmin: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end gap-3">
-                            <button onClick={() => { setShowDetail(false); setFormData(selectedItem); setShowModal(true); }} className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase flex items-center gap-2 shadow-lg hover:bg-blue-700">
-                                <Edit size={18}/> Edit Data Ini
+                        <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-2.5">
+                            <button onClick={() => { setShowDetail(false); setFormData(selectedItem); setShowModal(true); }} className="px-6 py-3.5 bg-blue-600 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-lg hover:bg-blue-700">
+                                <Edit size={16}/> Edit Data Ini
                             </button>
-                            <button onClick={() => setShowDetail(false)} className="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs uppercase hover:bg-slate-200">Tutup</button>
+                            <button onClick={() => setShowDetail(false)} className="px-6 py-3.5 bg-slate-100 text-slate-500 rounded-xl font-black text-xs uppercase hover:bg-slate-200">Tutup</button>
                         </div>
                     </div>
                 </div>
@@ -371,24 +422,27 @@ const DaftarStatistikAdmin: React.FC = () => {
 
             {/* MODAL 2: FORM INPUT TABS (CREATE / UPDATE) */}
             {showModal && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-                        <div className="flex flex-col md:flex-row h-[80vh]">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+                    <div className="bg-white w-full max-w-4xl rounded-2xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 my-auto">
+                        <div className="flex flex-col md:flex-row max-h-[85vh]">
                             
                             {/* Sidebar Tab Form */}
-                            <div className="w-full md:w-64 bg-slate-50 p-8 border-r border-slate-100">
-                                <h2 className="font-black text-slate-800 uppercase text-lg mb-8 tracking-tighter">Input Data</h2>
-                                <nav className="space-y-2">
+                            <div className="w-full md:w-60 bg-slate-50 p-4 sm:p-6 border-b md:border-b-0 md:border-r border-slate-100 shrink-0">
+                                <div className="flex justify-between items-center md:block mb-3 md:mb-6">
+                                    <h2 className="font-black text-slate-800 uppercase text-base tracking-tight">Input Data</h2>
+                                    <button onClick={() => setShowModal(false)} className="md:hidden text-slate-400 hover:text-slate-600 p-1"><X size={20}/></button>
+                                </div>
+                                <nav className="flex md:flex-col overflow-x-auto gap-2 pb-1 md:pb-0 scrollbar-none">
                                     {[
-                                        { id: 'umum', label: 'Umum', icon: <FileText size={18}/> },
-                                        { id: 'rekom', label: 'Rekomendasi', icon: <ClipboardCheck size={18}/> },
-                                        { id: 'metadata', label: 'Metadata', icon: <BarChart3 size={18}/> },
-                                        { id: 'diseminasi', label: 'Diseminasi', icon: <Globe size={18}/> },
+                                        { id: 'umum', label: 'Umum', icon: <FileText size={16}/> },
+                                        { id: 'rekom', label: 'Rekomendasi', icon: <ClipboardCheck size={16}/> },
+                                        { id: 'metadata', label: 'Metadata', icon: <BarChart3 size={16}/> },
+                                        { id: 'diseminasi', label: 'Diseminasi', icon: <Globe size={16}/> },
                                     ].map(tab => (
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id)}
-                                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === tab.id ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20' : 'text-slate-400 hover:bg-slate-100'}`}
+                                            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all whitespace-nowrap shrink-0 ${activeTab === tab.id ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-500 hover:bg-slate-200/60'}`}
                                         >
                                             {tab.icon} {tab.label}
                                         </button>

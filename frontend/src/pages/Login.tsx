@@ -129,16 +129,16 @@ const Login: React.FC = () => {
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full bg-linear-to-r from-brand-primary to-brand-secondary text-white py-4 rounded-2xl font-black shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70 disabled:cursor-not-allowed group"
+              className="w-full bg-brand-primary hover:bg-[#00b89e] text-slate-950 py-3.5 rounded-xl font-extrabold shadow-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2.5 text-xs uppercase tracking-wider disabled:opacity-70 disabled:cursor-not-allowed group cursor-pointer"
             >
               {isLoading ? (
                 <>
-                  <Loader2 size={20} className="animate-spin" /> 
+                  <Loader2 size={18} className="animate-spin" /> 
                   MEMPROSES...
                 </>
               ) : (
                 <>
-                  MASUK <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
+                  MASUK SISTEM <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>

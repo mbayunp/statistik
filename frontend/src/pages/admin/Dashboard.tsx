@@ -276,31 +276,31 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 lg:p-10 bg-slate-50/50 min-h-screen text-left">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-50/50 min-h-screen text-left">
       
       {/* === HEADER SECTION === */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary">
-              <LayoutDashboard size={20} />
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="p-1.5 bg-brand-primary/10 rounded-lg text-brand-primary flex items-center justify-center">
+              <LayoutDashboard size={18} />
             </div>
-            <span className="text-xs font-black text-brand-primary uppercase tracking-widest">Administrator Panel</span>
+            <span className="text-[10px] sm:text-xs font-black text-brand-primary uppercase tracking-widest">Administrator Panel</span>
           </div>
-          <h1 className="text-3xl lg:text-4xl font-black text-brand-dark uppercase tracking-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-brand-dark uppercase tracking-tight">
             Ringkasan Statistik
           </h1>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-200 w-fit">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
-              <Clock size={20} />
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <div className="flex items-center gap-2.5 bg-white px-3.5 py-2 rounded-2xl shadow-xs border border-slate-200/80">
+            <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+              <Clock size={16} />
             </div>
-            <div className="pr-4">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Waktu Server</p>
-              <p className="text-sm font-black text-brand-dark">
-                {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            <div>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">Waktu Server</p>
+              <p className="text-xs sm:text-sm font-black text-brand-dark leading-tight mt-0.5">
+                {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
             </div>
           </div>
@@ -308,39 +308,39 @@ const Dashboard: React.FC = () => {
           <button 
             onClick={fetchDashboardData} 
             disabled={isRefreshing}
-            className="w-14 h-14 bg-brand-dark text-white rounded-2xl flex items-center justify-center hover:bg-brand-primary transition-all shadow-xl active:scale-90 disabled:opacity-50 cursor-pointer"
+            className="w-10 h-10 sm:w-11 sm:h-11 bg-brand-dark text-white rounded-2xl flex items-center justify-center hover:bg-brand-primary transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
             title="Perbarui Data"
           >
-            <RefreshCw size={24} className={isRefreshing ? "animate-spin" : ""} />
+            <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
 
       {/* === STATS GRID SECTION === */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 mb-8">
         {statCards.map((card, index) => (
           <div 
             key={index} 
             onClick={() => navigate(card.path)}
-            className="p-1 rounded-4xl glass-card hover-lift transition-all duration-300 cursor-pointer"
+            className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200/70 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between group"
           >
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className={`w-12 h-12 rounded-2xl ${card.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-500`}>
-                  {card.icon}
-                </div>
-                <div className="p-1.5 rounded-lg bg-slate-50 text-slate-300 group-hover:text-brand-primary group-hover:bg-brand-primary/10 transition-colors">
-                  <ArrowUpRight size={16} />
-                </div>
+            <div className="flex justify-between items-start mb-3">
+              <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl ${card.color} flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shrink-0`}>
+                {card.icon}
               </div>
-              <div>
-                <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.15em] mb-1 truncate">{card.label}</p>
-                <div className="flex items-baseline gap-2">
-                  <h3 className="text-2xl font-black text-brand-dark">
-                    {loading ? "..." : card.value}
-                  </h3>
-                  <span className="text-[9px] font-bold text-slate-400">Total</span>
-                </div>
+              <div className="p-1 rounded-lg bg-slate-50 text-slate-300 group-hover:text-brand-primary group-hover:bg-brand-primary/10 transition-colors">
+                <ArrowUpRight size={14} />
+              </div>
+            </div>
+            <div>
+              <p className="text-slate-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-1 truncate" title={card.label}>
+                {card.label}
+              </p>
+              <div className="flex items-baseline gap-1.5">
+                <h3 className="text-xl sm:text-2xl font-black text-brand-dark">
+                  {loading ? "..." : card.value}
+                </h3>
+                <span className="text-[9px] font-bold text-slate-400 uppercase">Data</span>
               </div>
             </div>
           </div>
@@ -348,24 +348,32 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* === ANALYTICS & RECENT FEED SECTION === */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mb-8">
         
         {/* LEFT COLUMN: GRAPHICS */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="lg:col-span-8 space-y-6 lg:space-y-8">
           
           {/* Main Chart: Volume Surat */}
-          <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200/50 shadow-sm">
-            <div className="flex justify-between items-center mb-6 px-2">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/70 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
               <div>
-                <h3 className="text-lg font-black text-brand-dark flex items-center gap-2">
-                  <TrendingUp className="text-brand-primary" size={20} /> Tren Surat Masuk & Keluar
+                <h3 className="text-base sm:text-lg font-black text-brand-dark flex items-center gap-2">
+                  <TrendingUp className="text-brand-primary" size={18} /> Tren Surat Masuk & Keluar
                 </h3>
-                <p className="text-xs text-slate-400 font-medium">Perbandingan volume persuratan per bulan (Tahun 2026)</p>
+                <p className="text-xs text-slate-400 font-medium">Perbandingan volume persuratan per bulan (2026)</p>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider self-start sm:self-auto">
+                <div className="flex items-center gap-1.5 text-emerald-600">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" /> Surat Masuk
+                </div>
+                <div className="flex items-center gap-1.5 text-sky-600">
+                  <span className="w-2.5 h-2.5 rounded-full bg-sky-400" /> Surat Keluar
+                </div>
               </div>
             </div>
-            <div className="h-56 sm:h-64 md:h-72 w-full">
+            <div className="h-52 sm:h-64 md:h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={suratTrend} margin={{ top: 10, right: 5, left: -15, bottom: 0 }}>
+                <AreaChart data={suratTrend} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#00D2B4" stopOpacity={0.4}/>
@@ -381,7 +389,7 @@ const Dashboard: React.FC = () => {
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#002B2D', 
-                      borderRadius: '16px', 
+                      borderRadius: '14px', 
                       border: 'none',
                       color: '#ffffff',
                       fontSize: '12px',
@@ -396,15 +404,15 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Sub Charts: Realisasi Anggaran & Kondisi Aset */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
             
             {/* Anggaran Radial Bar */}
-            <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200/50 shadow-sm flex flex-col justify-between">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/70 shadow-xs flex flex-col justify-between">
               <div>
-                <h4 className="text-base font-black text-brand-dark mb-1">Realisasi Keuangan</h4>
-                <p className="text-xs text-slate-400 mb-6 font-medium">Persentase penyerapan anggaran tahun berjalan</p>
+                <h4 className="text-sm sm:text-base font-black text-brand-dark mb-1">Realisasi Keuangan</h4>
+                <p className="text-xs text-slate-400 mb-4 font-medium">Persentase penyerapan anggaran</p>
               </div>
-              <div className="h-44 relative flex items-center justify-center">
+              <div className="h-40 sm:h-44 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadialBarChart cx="50%" cy="50%" innerRadius="60%" outerRadius="100%" barSize={14} data={anggaranStats}>
                     <RadialBar
@@ -415,7 +423,7 @@ const Dashboard: React.FC = () => {
                   </RadialBarChart>
                 </ResponsiveContainer>
                 <div className="absolute flex flex-col items-center">
-                  <span className="text-2xl font-black text-brand-dark">
+                  <span className="text-xl sm:text-2xl font-black text-brand-dark">
                     {anggaranStats.find(a => a.name === 'Realisasi')?.value || 0}%
                   </span>
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Realisasi</span>
@@ -424,12 +432,12 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Aset Pie Chart */}
-            <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200/50 shadow-sm flex flex-col justify-between">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/70 shadow-xs flex flex-col justify-between">
               <div>
-                <h4 className="text-base font-black text-brand-dark mb-1">Kondisi Aset</h4>
-                <p className="text-xs text-slate-400 mb-6 font-medium">Rasio kelayakan inventaris barang dan PC bidang</p>
+                <h4 className="text-sm sm:text-base font-black text-brand-dark mb-1">Kondisi Aset Bidang</h4>
+                <p className="text-xs text-slate-400 mb-4 font-medium">Rasio kelayakan barang dan perangkat</p>
               </div>
-              <div className="h-44 flex items-center justify-center gap-4">
+              <div className="h-40 sm:h-44 flex items-center justify-center gap-3">
                 <div className="w-1/2 h-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -437,8 +445,8 @@ const Dashboard: React.FC = () => {
                         data={asetStats}
                         cx="50%"
                         cy="50%"
-                        innerRadius={45}
-                        outerRadius={65}
+                        innerRadius={38}
+                        outerRadius={58}
                         paddingAngle={4}
                         dataKey="value"
                       >
@@ -450,10 +458,10 @@ const Dashboard: React.FC = () => {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="w-1/2 space-y-2 text-[10px] sm:text-xs font-bold text-slate-600">
+                <div className="w-1/2 space-y-1.5 text-[10px] sm:text-xs font-bold text-slate-600">
                   {asetStats.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
                       <span className="truncate">{item.name} ({item.value})</span>
                     </div>
                   ))}
@@ -467,16 +475,24 @@ const Dashboard: React.FC = () => {
 
         {/* RIGHT COLUMN: RECENT ACTIVITIES */}
         <div className="lg:col-span-4">
-          <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200/50 shadow-sm h-full flex flex-col">
-            <div className="mb-6">
-              <h3 className="text-lg font-black text-brand-dark flex items-center gap-2">
-                <Activity className="text-brand-primary" size={20} /> Log Aktivitas Baru
-              </h3>
-              <p className="text-xs text-slate-400 font-medium">Aktivitas entri dan log sistem mutakhir</p>
-            </div>
+          <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/70 shadow-xs h-full flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-base sm:text-lg font-black text-brand-dark flex items-center gap-2">
+                  <Activity className="text-brand-primary" size={18} /> Log Aktivitas
+                </h3>
+                <button 
+                  onClick={() => navigate('/admin/riwayat-aktivitas')} 
+                  className="text-[10px] font-black text-brand-primary hover:underline uppercase tracking-wider cursor-pointer"
+                >
+                  Semua
+                </button>
+              </div>
+              <p className="text-xs text-slate-400 font-medium mb-4">Aktivitas entri sistem mutakhir</p>
 
-            <div className="flex-1 overflow-y-auto pr-1 mt-2">
-              <ActivityTimeline limit={5} />
+              <div className="overflow-y-auto max-h-[380px] lg:max-h-none pr-1">
+                <ActivityTimeline limit={5} />
+              </div>
             </div>
           </div>
         </div>
