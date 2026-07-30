@@ -36,12 +36,15 @@ import { isTokenExpired, handleSessionExpired } from './utils/auth';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
-  
-  if (!token || isTokenExpired(token)) {
-    React.useEffect(() => {
-      handleSessionExpired('Sesi login Anda telah berakhir atau belum terautentikasi (Error 403). Silakan login kembali.');
-    }, []);
+  const expired = isTokenExpired(token);
 
+  React.useEffect(() => {
+    if (!token || expired) {
+      handleSessionExpired('Sesi login Anda telah berakhir atau belum terautentikasi (Error 403). Silakan login kembali.');
+    }
+  }, [token, expired]);
+
+  if (!token || expired) {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 text-center">
         <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl max-w-md w-full shadow-2xl animate-in zoom-in duration-300">
