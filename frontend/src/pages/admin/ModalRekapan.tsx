@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { X, Calendar, FileText, Tag, UploadCloud, Loader2, AlignLeft, Images, Link as LinkIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { API_BASE_URL } from '../../config';
+import { handleSessionExpired } from '../../utils/auth';
 
 interface ModalProps {
   isOpen: boolean;
@@ -167,6 +168,9 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
         
         onRefresh();
         onClose();
+      } else if (response.status === 401 || response.status === 403) {
+        const errData = await response.json().catch(() => ({}));
+        handleSessionExpired(errData.message || 'Sesi login Anda telah kadaluarsa (Error 403). Silakan login kembali.');
       } else {
         const errData = await response.json();
         Swal.fire('Gagal', errData.message || 'Terjadi kesalahan saat menyimpan data', 'error');

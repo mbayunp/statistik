@@ -11,7 +11,7 @@ const authMiddleware = (req, res, next) => {
     if (!token) {
         return res.status(401).json({ 
             success: false, 
-            message: 'Akses ditolak: Token autentikasi tidak ditemukan!' 
+            message: 'Akses ditolak: Token autentikasi tidak ditemukan! Silakan login kembali.' 
         });
     }
 
@@ -22,7 +22,7 @@ const authMiddleware = (req, res, next) => {
     } catch (error) {
         return res.status(403).json({ 
             success: false, 
-            message: 'Akses ditolak: Token autentikasi tidak valid atau telah kadaluarsa!' 
+            message: 'Akses ditolak (Error 403): Token autentikasi telah kadaluarsa atau tidak valid! Silakan login kembali.' 
         });
     }
 };

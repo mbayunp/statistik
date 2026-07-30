@@ -31,12 +31,36 @@ import FormBuilder from './pages/admin/FormBuilder';
 import FormulirResponses from './pages/admin/FormulirResponses';
 import ShortlinkList from './pages/admin/ShortlinkList';
 import ActivityLogPage from './pages/admin/ActivityLogPage';
+import { isTokenExpired, handleSessionExpired } from './utils/auth';
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  
+  if (!token || isTokenExpired(token)) {
+    React.useEffect(() => {
+      handleSessionExpired('Sesi login Anda telah berakhir atau belum terautentikasi (Error 403). Silakan login kembali.');
+    }, []);
+
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl max-w-md w-full shadow-2xl animate-in zoom-in duration-300">
+          <div className="w-16 h-16 bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
+            <span className="font-black text-2xl">403</span>
+          </div>
+          <h2 className="text-xl font-black mb-2">Sesi Login Berakhir</h2>
+          <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+            Masa berlaku token login Anda telah habis atau Anda belum terautentikasi. Silakan masuk kembali ke Menu Login Admin.
+          </p>
+          <button 
+            onClick={() => handleSessionExpired('Membuka Halaman Login Admin...')}
+            className="w-full bg-brand-primary hover:bg-brand-dark text-white py-3.5 px-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-brand-primary/20 active:scale-95"
+          >
+            Ke Menu Login Admin
+          </button>
+        </div>
+      </div>
+    );
   }
   return <>{children}</>;
 };
