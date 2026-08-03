@@ -5,8 +5,19 @@ require('dotenv').config();
 
 const app = express();
 
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://10.50.14.217:5173')
+  .split(',')
+  .map(origin => origin.trim());
+
 const corsOptions = {
-  origin: '*',
+  origin: (origin, callback) => {
+    // Permintaan tanpa origin (misal: curl, mobile apps, atau same-origin) atau origin yang diizinkan
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('Akses ditolak oleh kebijakan CORS'));
+    }
+  },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 204

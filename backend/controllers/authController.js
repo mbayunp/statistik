@@ -4,7 +4,13 @@ const User = require('../models/userModel');
 
 exports.register = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password, pin } = req.body;
+        const SECRET_PIN = process.env.REGISTER_PIN ? process.env.REGISTER_PIN.trim() : null;
+
+        // Validasi PIN Keamanan Server-Side (Cegah Bypass PIN)
+        if (!pin || pin !== SECRET_PIN) {
+            return res.status(403).json({ success: false, message: 'Registrasi ditolak: PIN Keamanan salah!' });
+        }
         
         // Cek apakah username sudah ada
         const existingUser = await User.findByUsername(username);
@@ -33,13 +39,13 @@ exports.login = async (req, res) => {
         // Cari user di database
         const user = await User.findByUsername(username);
         if (!user) {
-            return res.status(404).json({ success: false, message: 'Username tidak ditemukan!' });
+            return res.status(401).json({ success: false, message: 'Username atau password salah!' });
         }
 
         // Cek kecocokan password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Password salah!' });
+            return res.status(401).json({ success: false, message: 'Username atau password salah!' });
         }
 
         // Buat JWT Token (Berlaku 1 hari)
