@@ -8,7 +8,7 @@ import {
   Edit3, 
   Calendar, 
   Search, 
-  Download, 
+  Printer, 
   FileSpreadsheet, 
   Maximize2, 
   X, 
@@ -23,11 +23,27 @@ import {
 } from 'lucide-react';
 import ModalRekapan from './ModalRekapan';
 import { API_BASE_URL } from '../../config';
+import logoGarut from '../../assets/images/logo.png';
+import logoGsd from '../../assets/images/logo-gsd.png';
 
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable'; 
+
+const bulanLabels: Record<string, string> = {
+  'semua': 'Semua Bulan',
+  '0': 'Januari',
+  '1': 'Februari',
+  '2': 'Maret',
+  '3': 'April',
+  '4': 'Mei',
+  '5': 'Juni',
+  '6': 'Juli',
+  '7': 'Agustus',
+  '8': 'September',
+  '9': 'Oktober',
+  '10': 'November',
+  '11': 'Desember'
+};
 
 const RekapanKegiatan: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,6 +53,7 @@ const RekapanKegiatan: React.FC = () => {
   const [selectedData, setSelectedData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
+  // STATE UNTUK SLIDER GAMBAR MULTIPLE
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
 
@@ -62,41 +79,32 @@ const RekapanKegiatan: React.FC = () => {
   };
 
   useEffect(() => { 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     setTimeout(() => { fetchKegiatan(); }, 0); 
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     setTimeout(() => { setCurrentPage(1); }, 0);
   }, [activeSubTab, selectedMonth]);
 
+  // FUNGSI PEMBACA GAMBAR (SUPER KEBAL ERROR)
   const parseImages = (imageField: unknown): string[] => {
     if (!imageField) return [];
 
-    const strData = imageField;
+    let strData = imageField;
 
-    if (Array.isArray(strData)) {
-      const flatList: string[] = [];
-      for (const item of strData) {
-        if (typeof item === 'string') {
-          if (item.startsWith('[')) {
-            flatList.push(...parseImages(item));
-          } else {
-            flatList.push(item);
-          }
-        } else if (Array.isArray(item)) {
-          flatList.push(...parseImages(item));
-        } else if (item) {
-          flatList.push(String(item));
-        }
-      }
-      return flatList;
+    if (Array.isArray(strData) && typeof strData[0] === 'string' && strData[0].startsWith('[')) {
+      strData = strData[0];
+    } else if (Array.isArray(strData)) {
+      return strData;
     }
 
     if (typeof strData === 'string') {
       try {
         let parsed = JSON.parse(strData);
         if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-        if (Array.isArray(parsed)) return parseImages(parsed);
+        if (Array.isArray(parsed)) return parsed;
       } catch { /* ignore */ }
 
       const manualClean = (strData as string).replace(/[[\]"\\]/g, '').trim(); 
@@ -109,6 +117,7 @@ const RekapanKegiatan: React.FC = () => {
     return [];
   };
 
+  // FUNGSI PEMBENTUK URL YANG AMAN
   const getImageUrl = (path: string) => {
     if (!path) return "https://placehold.co/600x400?text=Tanpa+Gambar";
     if (path.startsWith('http')) return path;
@@ -131,12 +140,7 @@ const RekapanKegiatan: React.FC = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const token = localStorage.getItem('token');
-          await axios.delete(`${API_BASE_URL}/api/rekapan/${id}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          await axios.delete(`${API_BASE_URL}/api/rekapan/${id}`);
           fetchKegiatan();
           Swal.fire('Terhapus!', 'Rekapan berhasil dihapus.', 'success');
         } catch {
@@ -209,8 +213,7 @@ const RekapanKegiatan: React.FC = () => {
         { header: 'Tanggal Pelaksanaan', key: 'tanggal', width: 25 },
         { header: 'Uraian / Judul', key: 'judul', width: 35 },
         { header: 'Deskripsi', key: 'deskripsi', width: 45 },
-        { header: 'Link Materi', key: 'link', width: 40 }, // FIELD BARU
-        { header: 'Dokumentasi', key: 'dokumentasi', width: 35 }
+        { header: 'Dokumentasi', key: 'dokumentasi', width: 35 } // Lebar kolom gambar
       ];
 
       worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -224,8 +227,7 @@ const RekapanKegiatan: React.FC = () => {
           no: i + 1,
           tanggal: formatTanggalKalender(item.tanggal),
           judul: item.nama_kegiatan || "Tanpa Judul",
-          deskripsi: item.keterangan || "-",
-          link: item.link_materi || "-" // FIELD BARU
+          deskripsi: item.keterangan || "-"
         });
         row.alignment = { vertical: 'top', wrapText: true };
 
@@ -245,7 +247,7 @@ const RekapanKegiatan: React.FC = () => {
                  });
 
                  worksheet.addImage(imageId, {
-                    tl: { col: 5.1, row: i + 1 + (imgIndex * 0.9) }, // Geser kolom untuk gambar karena ada link
+                    tl: { col: 4.1, row: i + 1 + (imgIndex * 0.9) }, 
                     ext: { width: 140, height: 80 }
                  });
               }
@@ -266,84 +268,12 @@ const RekapanKegiatan: React.FC = () => {
     }
   };
 
-  const exportPDF = async () => {
-    if (currentData.length === 0) return Swal.fire('Kosong', 'Tidak ada data', 'info');
-    
-    Swal.fire({
-      title: 'Menyiapkan PDF...',
-      text: 'Sedang menyusun gambar dokumen.',
-      allowOutsideClick: false,
-      didOpen: () => { Swal.showLoading(); }
-    });
-
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text(`LAPORAN KEGIATAN: ${activeSubTab}`, 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 26);
-
-    const tableData = [];
-    const allRowImages: string[][] = [];
-
-    for (let i = 0; i < currentData.length; i++) {
-      const item = currentData[i];
-      const images = parseImages(item.gambar || item.dokumentasi);
-      
-      const rowBase64s: string[] = [];
-      for (const img of images.slice(0, 3)) {
-         const base64Img = await getBase64ImageFromUrl(getImageUrl(img));
-         if (base64Img) rowBase64s.push(base64Img);
-      }
-      allRowImages.push(rowBase64s);
-      
-      // Menggabungkan keterangan dan link ke dalam satu sel di PDF agar tidak penuh
-      let deskripsiPDF = item.keterangan || "-";
-      if (item.link_materi) deskripsiPDF += `\n\nLampiran: ${item.link_materi}`;
-
-      tableData.push([
-        i + 1, 
-        formatTanggalKalender(item.tanggal), 
-        item.nama_kegiatan || "Tanpa Judul",
-        deskripsiPDF,
-        '' 
-      ]);
+  // ================= PRINT / EXPORT PDF DENGAN WINDOW.PRINT =================
+  const handlePrint = () => {
+    if (currentData.length === 0) {
+      return Swal.fire('Kosong', 'Tidak ada data untuk dicetak', 'info');
     }
-
-    autoTable(doc, { 
-      startY: 32, 
-      head: [['No', 'Tanggal', 'Judul / Uraian', 'Deskripsi & Link', 'Dokumentasi']], 
-      body: tableData,
-      headStyles: { fillColor: [0, 150, 136], halign: 'center' },
-      columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 60 },
-        4: { cellWidth: 40 }
-      },
-      didParseCell: (data) => {
-        if (data.section === 'body' && data.column.index === 4) {
-            const rowImgs = allRowImages[data.row.index] || [];
-            data.cell.styles.minCellHeight = rowImgs.length > 0 ? (rowImgs.length * 30) + 4 : 30; 
-        }
-      },
-      didDrawCell: (data) => {
-        if (data.section === 'body' && data.column.index === 4) {
-           const rowImgs = allRowImages[data.row.index] || [];
-           let currentY = data.cell.y + 2; 
-           
-           for (const base64Img of rowImgs) {
-              if (base64Img && base64Img.startsWith('data:image')) {
-                 doc.addImage(base64Img, 'JPEG', data.cell.x + 2, currentY, 36, 26);
-                 currentY += 30;
-              }
-           }
-        }
-      }
-    });
-
-    doc.save(`Laporan_${activeSubTab}.pdf`);
-    Swal.close(); 
+    window.print();
   };
 
   const forceDownloadImage = async (imageUrl: string) => {
@@ -360,14 +290,206 @@ const RekapanKegiatan: React.FC = () => {
     }
   };
 
+  // FUNGSI NAVIGASI SLIDER
   const nextImage = () => setCurrentPreviewIndex((prev) => (prev + 1) % previewImages.length);
   const prevImage = () => setCurrentPreviewIndex((prev) => (prev - 1 + previewImages.length) % previewImages.length);
 
   return (
     <div className="flex-1 bg-slate-50/50 min-h-screen flex flex-col">
-      <main className="flex-1 p-8 lg:p-10 text-left relative overflow-y-auto">
+      
+      {/* CSS Stylesheet Khusus Mode Cetak / Print PDF */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 12mm 15mm 15mm 15mm;
+          }
+          header, nav, aside, button, .no-print, select, input, .swal2-container {
+            display: none !important;
+          }
+          body, .flex-1, main, .min-h-screen {
+            background: white !important;
+            color: black !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+            width: 100% !important;
+          }
+          .print-only {
+            display: block !important;
+          }
+          .screen-only {
+            display: none !important;
+          }
+          .print-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-top: 1rem !important;
+          }
+          .print-table th, .print-table td {
+            border: 1px solid #1e293b !important;
+            padding: 6px 8px !important;
+            color: #0f172a !important;
+            font-size: 9.5pt !important;
+            vertical-align: top !important;
+          }
+          .print-table th {
+            background-color: #f1f5f9 !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-table tr {
+            page-break-inside: avoid !important;
+          }
+          .print-signatures {
+            display: flex !important;
+            justify-content: space-between !important;
+            margin-top: 2.5rem !important;
+            page-break-inside: avoid !important;
+          }
+          .signature-box {
+            text-align: center !important;
+            width: 240px !important;
+          }
+          .signature-space {
+            height: 4.5rem !important;
+          }
+          .signature-line {
+            border-top: 1px solid #0f172a !important;
+            font-weight: bold !important;
+            padding-top: 0.25rem !important;
+          }
+        }
+        @media screen {
+          .print-only {
+            display: none !important;
+          }
+        }
+      `}} />
+
+      {/* ================= SECTION KHUSUS PRINT / CETAK FORMAL ================= */}
+      <div className="print-only p-4">
+        {/* Kop Surat Resmi */}
+        <div className="flex items-center justify-between pb-2">
+          <img src={logoGarut} alt="Logo Kab Garut" className="h-20 w-auto object-contain" />
+          <div className="text-center flex-1 px-4">
+            <h2 className="text-sm font-bold tracking-wide uppercase text-slate-800 leading-tight">Pemerintah Kabupaten Garut</h2>
+            <h1 className="text-lg font-black tracking-wider uppercase text-slate-900 leading-tight">Dinas Komunikasi dan Informatika</h1>
+            <p className="text-xs font-bold text-slate-700 mt-0.5">Bidang Penyelenggaraan Statistik Sektoral</p>
+            <p className="text-[9pt] text-slate-600 leading-tight">Jl. Pembangunan No. 181, Sukagalih, Kec. Tarogong Kidul, Kabupaten Garut, Jawa Barat 44151</p>
+            <p className="text-[8.5pt] text-slate-500 leading-tight">Portal: garutsatudata.garutkab.go.id | Email: diskominfo@garutkab.go.id</p>
+          </div>
+          <img src={logoGsd} alt="Logo Garut Satu Data" className="h-16 w-auto object-contain" />
+        </div>
         
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-4">
+        {/* Garis Ganda Pembatas Kop Surat */}
+        <div className="border-b-2 border-slate-900 mb-0.5"></div>
+        <div className="border-b-[1px] border-slate-900 mb-5"></div>
+
+        {/* Judul Laporan */}
+        <div className="text-center mb-4">
+          <h3 className="text-base font-black uppercase text-slate-900 tracking-wide underline underline-offset-4">
+            Laporan Rekapitulasi Kegiatan: {activeSubTab}
+          </h3>
+          <p className="text-xs font-semibold text-slate-700 mt-1">
+            Periode: {selectedMonth !== 'semua' ? bulanLabels[selectedMonth] : 'Semua Bulan'} 2026
+          </p>
+          <p className="text-[9pt] text-slate-500">
+            Dicetak pada: {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} | Total: {currentData.length} Rekapan Kegiatan
+          </p>
+        </div>
+
+        {/* Tabel Rekapan Kegiatan Untuk Print */}
+        <table className="print-table">
+          <thead>
+            <tr>
+              <th style={{ width: '30px', textAlign: 'center' }}>No</th>
+              <th style={{ width: '90px', textAlign: 'center' }}>Tanggal</th>
+              <th style={{ width: '160px' }}>Judul / Uraian</th>
+              <th>Deskripsi & Lampiran</th>
+              <th style={{ width: '120px', textAlign: 'center' }}>Dokumentasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentData.length > 0 ? (
+              currentData.map((item, idx) => {
+                const images = parseImages(item.gambar || item.dokumentasi);
+                return (
+                  <tr key={idx}>
+                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                    <td style={{ textAlign: 'center', fontSize: '9pt' }}>
+                      {formatTanggalKalender(item.tanggal)}
+                    </td>
+                    <td style={{ fontWeight: 700 }}>
+                      {item.nama_kegiatan || 'Tanpa Judul'}
+                    </td>
+                    <td style={{ whiteSpace: 'pre-line' }}>
+                      {item.keterangan || '-'}
+                      {item.link_materi && (
+                        <div style={{ marginTop: '4px', fontSize: '8.5pt', color: '#0369a1', fontStyle: 'italic' }}>
+                          Lampiran: {item.link_materi}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {images.length > 0 ? (
+                        <div className="flex flex-col gap-1 items-center justify-center">
+                          {images.slice(0, 2).map((img, imgIdx) => (
+                            <img 
+                              key={imgIdx} 
+                              src={getImageUrl(img)} 
+                              alt="Dokumentasi" 
+                              style={{ maxHeight: '65px', maxWidth: '100px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }} 
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '8.5pt', color: '#94a3b8', fontStyle: 'italic' }}>Tanpa Foto</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '15px' }}>Tidak ada data kegiatan</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+        {/* Kolom Tanda Tangan Formal */}
+        <div className="print-signatures">
+          <div className="signature-box">
+            <p className="text-xs font-semibold text-slate-700">Mengetahui,</p>
+            <p className="text-xs font-black text-slate-900 uppercase mt-0.5">Kepala Bidang PSS</p>
+            <div className="signature-space"></div>
+            <div className="signature-line">
+              ( ............................................ )
+            </div>
+            <p className="text-[9pt] text-slate-600 mt-0.5">NIP. ............................................</p>
+          </div>
+          
+          <div className="signature-box">
+            <p className="text-xs font-semibold text-slate-700">Garut, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p className="text-xs font-black text-slate-900 uppercase mt-0.5">Pelaksana / Tenaga Ahli</p>
+            <div className="signature-space"></div>
+            <div className="signature-line">
+              ( ............................................ )
+            </div>
+            <p className="text-[9pt] text-slate-600 mt-0.5">Bidang Statistik Sektoral</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= SCREEN UI (NO-PRINT) ================= */}
+      <main className="flex-1 p-8 lg:p-10 text-left relative overflow-y-auto screen-only">
+        
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-4 no-print">
           <div>
             <span className="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-500 px-3 py-1 rounded-full font-bold text-[10px] uppercase tracking-widest mb-3 shadow-sm">
               <Calendar size={12} /> Periode 2026
@@ -377,27 +499,34 @@ const RekapanKegiatan: React.FC = () => {
             </h1>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 no-print">
             <div className="flex items-center bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200">
-              <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 hover:text-red-600 rounded-xl text-xs font-bold text-slate-500 transition-colors">
-                <Download size={16} /> PDF
+              <button 
+                onClick={handlePrint} 
+                className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 hover:text-red-600 rounded-xl text-xs font-bold text-slate-500 transition-colors cursor-pointer"
+                title="Cetak Laporan / Simpan PDF"
+              >
+                <Printer size={16} /> Export PDF
               </button>
               <div className="w-px h-6 bg-slate-200 mx-1"></div>
-              <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-bold text-slate-500 transition-colors">
+              <button 
+                onClick={exportExcel} 
+                className="flex items-center gap-2 px-4 py-2 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-bold text-slate-500 transition-colors cursor-pointer"
+              >
                 <FileSpreadsheet size={16} /> Excel
               </button>
             </div>
 
             <button 
               onClick={() => { setSelectedData(null); setIsModalOpen(true); }} 
-              className="bg-brand-dark text-white px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2 hover:bg-brand-primary transition-all shadow-xl active:scale-95"
+              className="bg-brand-dark text-white px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2 hover:bg-brand-primary transition-all shadow-xl active:scale-95 cursor-pointer"
             >
               <Plus size={18} /> Tambah Data
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-end mb-6 gap-3">
+        <div className="flex flex-wrap justify-end mb-6 gap-3 no-print">
           <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-2 w-fit">
              <Filter size={14} className="text-slate-400" />
              <span className="text-[10px] font-black text-slate-400 uppercase">Bulan:</span>
@@ -449,7 +578,7 @@ const RekapanKegiatan: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden relative">
+        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden relative no-print">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -458,7 +587,7 @@ const RekapanKegiatan: React.FC = () => {
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-36">Tanggal</th>
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-[25%]">Uraian / Judul</th>
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-[30%]">Deskripsi</th>
-                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-32">Materi / Lampiran</th> {/* KOLOM BARU */}
+                  <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-32">Materi / Lampiran</th>
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-48 text-center">Dokumentasi</th>
                   <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest w-24 text-center">Aksi</th>
                 </tr>
@@ -529,6 +658,7 @@ const RekapanKegiatan: React.FC = () => {
                                onError={(e) => { e.currentTarget.src = "https://placehold.co/400x300?text=Error+Loading+Image"; }}
                             />
                             
+                            {/* BADGE MULTIPLE IMAGES */}
                             {images.length > 1 && (
                               <div className="absolute top-2 right-2 bg-brand-dark/80 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-lg border border-white/20 shadow-lg flex items-center gap-1 z-10">
                                 <Images size={12} /> +{images.length - 1}
@@ -543,12 +673,12 @@ const RekapanKegiatan: React.FC = () => {
                       
                       <td className="p-6 align-top">
                          <div className="flex flex-col gap-2">
-                            <button onClick={() => { setSelectedData(item); setIsModalOpen(true); }} className="w-full py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex justify-center border border-blue-100 shadow-sm"><Edit3 size={14} /></button>
-                            <button onClick={() => handleDelete(item.id)} className="w-full py-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex justify-center border border-red-100 shadow-sm"><Trash2 size={14} /></button>
+                            <button onClick={() => { setSelectedData(item); setIsModalOpen(true); }} className="w-full py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all flex justify-center border border-blue-100 shadow-sm cursor-pointer"><Edit3 size={14} /></button>
+                            <button onClick={() => handleDelete(item.id)} className="w-full py-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex justify-center border border-red-100 shadow-sm cursor-pointer"><Trash2 size={14} /></button>
                          </div>
                       </td>
                     </tr>
-                  )
+                  );
                 }) : (
                   <tr>
                     <td colSpan={7} className="py-24 text-center">
@@ -563,7 +693,7 @@ const RekapanKegiatan: React.FC = () => {
         </div>
 
         {currentData.length > 0 && (
-          <div className="mt-6 flex flex-col sm:flex-row justify-between items-center px-4 gap-4">
+          <div className="mt-6 flex flex-col sm:flex-row justify-between items-center px-4 gap-4 no-print">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 Halaman {currentPage} dari {totalPages || 1} — Total {currentData.length} Rekapan
               </p>
@@ -571,14 +701,14 @@ const RekapanKegiatan: React.FC = () => {
                 <button 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
                   disabled={currentPage === 1} 
-                  className="p-3 rounded-xl bg-white border border-slate-200 disabled:opacity-30 shadow-sm hover:bg-slate-50 transition-colors"
+                  className="p-3 rounded-xl bg-white border border-slate-200 disabled:opacity-30 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   <ChevronLeft size={16}/>
                 </button>
                 <button 
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
                   disabled={currentPage === totalPages || totalPages === 0} 
-                  className="p-3 rounded-xl bg-white border border-slate-200 disabled:opacity-30 shadow-sm hover:bg-slate-50 transition-colors"
+                  className="p-3 rounded-xl bg-white border border-slate-200 disabled:opacity-30 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   <ChevronRight size={16}/>
                 </button>
@@ -597,13 +727,13 @@ const RekapanKegiatan: React.FC = () => {
 
       {/* MODAL SLIDER GALLERY */}
       {previewImages.length > 0 && (
-        <div className="fixed inset-0 z-200 flex items-center justify-center bg-brand-dark/95 p-4 backdrop-blur-xl animate-in fade-in duration-300">
-          <button onClick={() => setPreviewImages([])} className="absolute top-8 right-8 text-white/50 hover:text-white transition-all z-50">
+        <div className="fixed inset-0 z-200 flex items-center justify-center bg-brand-dark/95 p-4 backdrop-blur-xl animate-in fade-in duration-300 no-print">
+          <button onClick={() => setPreviewImages([])} className="absolute top-8 right-8 text-white/50 hover:text-white transition-all z-50 cursor-pointer">
             <X size={40} />
           </button>
 
           {previewImages.length > 1 && (
-            <button onClick={prevImage} className="absolute left-4 lg:left-12 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all z-50">
+            <button onClick={prevImage} className="absolute left-4 lg:left-12 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all z-50 cursor-pointer">
               <ChevronLeft size={32} />
             </button>
           )}
@@ -615,13 +745,12 @@ const RekapanKegiatan: React.FC = () => {
                 className="max-w-full max-h-[65vh] object-contain rounded-4xl shadow-2xl border border-white/10" 
               />
               
-              {/* === INDIKATOR NAMA FILE UNTUK DEBUGGING === */}
               <div className="mt-4 bg-brand-dark/50 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10 text-center">
                  <p className="text-white font-bold text-sm tracking-wider">
                    Gambar {currentPreviewIndex + 1} dari {previewImages.length}
                  </p>
                  <p className="text-emerald-400 font-mono text-[10px] mt-1 break-all">
-                   Path Asli: {previewImages[currentPreviewIndex]}
+                   Path: {previewImages[currentPreviewIndex]}
                  </p>
               </div>
             </div>
@@ -632,7 +761,7 @@ const RekapanKegiatan: React.FC = () => {
                   <button 
                     key={idx}
                     onClick={() => setCurrentPreviewIndex(idx)}
-                    className={`h-2.5 rounded-full transition-all duration-300 ${idx === currentPreviewIndex ? 'w-8 bg-brand-primary' : 'w-2.5 bg-white/30 hover:bg-white/50'}`}
+                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${idx === currentPreviewIndex ? 'w-8 bg-brand-primary' : 'w-2.5 bg-white/30 hover:bg-white/50'}`}
                   />
                 ))}
               </div>
@@ -640,14 +769,14 @@ const RekapanKegiatan: React.FC = () => {
 
             <button 
               onClick={() => forceDownloadImage(getImageUrl(previewImages[currentPreviewIndex]))} 
-              className="mt-8 bg-brand-primary hover:bg-brand-dark text-white px-10 py-4 rounded-full font-black text-xs transition-all flex items-center gap-3 shadow-2xl active:scale-95"
+              className="mt-8 bg-brand-primary hover:bg-brand-dark text-white px-10 py-4 rounded-full font-black text-xs transition-all flex items-center gap-3 shadow-2xl active:scale-95 cursor-pointer"
             >
               <DownloadCloud size={20} /> UNDUH GAMBAR INI
             </button>
           </div>
 
           {previewImages.length > 1 && (
-            <button onClick={nextImage} className="absolute right-4 lg:right-12 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all z-50">
+            <button onClick={nextImage} className="absolute right-4 lg:right-12 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all z-50 cursor-pointer">
               <ChevronRight size={32} />
             </button>
           )}
