@@ -44,6 +44,7 @@ const laporanRoutes = require('./routes/laporanRoutes');
 const formRoutes = require('./routes/formRoutes');
 const linkRoutes = require('./routes/linkRoutes');
 const logRoutes = require('./routes/logRoutes');
+const kalenderRoutes = require('./routes/kalenderRoutes');
 
 app.use('/api/berkas', BerkasRoutes);
 app.use('/api/kegiatan', kegiatanRoutes);
@@ -59,6 +60,7 @@ app.use('/api/laporan', laporanRoutes);
 app.use('/api/formulir', formRoutes);
 app.use('/api/links', linkRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/kalender', kalenderRoutes);
 
 app.get('/', (req, res) => {
     res.json({ 

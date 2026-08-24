@@ -32,6 +32,7 @@ import FormulirResponses from './pages/admin/FormulirResponses';
 import ShortlinkList from './pages/admin/ShortlinkList';
 import ActivityLogPage from './pages/admin/ActivityLogPage';
 import { isTokenExpired, handleSessionExpired } from './utils/auth';
+import KalenderAdmin from './pages/admin/KalenderUtama';
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -124,6 +125,7 @@ const App: React.FC = () => {
           <Route path="penugasan" element={<PenugasanPage />} />
           <Route path="aset" element={<AsetBidang />} />
           <Route path="rekapan-permohonan" element={<RekapanPermohonan />} />
+          <Route path="kalender" element={<KalenderAdmin />} />
           <Route path="laporan-tenaga-ahli" element={<LaporanBulanan />} />
           <Route path="laporan-kinerja" element={<LaporanKinerjaPegawai />} />
           <Route path="formulir" element={<FormulirList />} />

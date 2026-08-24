@@ -4,6 +4,7 @@ import {
   LayoutDashboard, 
   ClipboardList, 
   Users, 
+  Calendar,
   LogOut, 
   Globe, 
   Eye, 
@@ -46,6 +47,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const topMenu = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
+    { name: 'Kalender Utama', path: '/admin/kalender', icon: <Calendar size={20} /> },
   ];
 
   const midMenus = [
@@ -70,6 +72,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (path.startsWith('/admin/dashboard')) return 'Dashboard';
     if (path.startsWith('/admin/riwayat-aktivitas')) return 'Riwayat Aktivitas';
     if (path.startsWith('/admin/rekapan-permohonan')) return 'Rekapan Permohonan';
+    if (path.startsWith('/admin/kalender')) return 'Kalender Utama';
     if (path.startsWith('/admin/kegiatan')) return 'Publikasi Kegiatan';
     if (path.startsWith('/admin/surat/masuk')) return 'Surat Masuk';
     if (path.startsWith('/admin/surat/keluar')) return 'Surat Keluar';
