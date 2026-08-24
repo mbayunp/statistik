@@ -5,7 +5,20 @@ const db = require('../config/db'); // Sesuaikan koneksi database Anda
 exports.getKalender = async (req, res) => {
   try {
     const { tahun, bulan } = req.query;
-    let query = 'SELECT * FROM kalender_kegiatan WHERE 1=1';
+    let query = `
+      SELECT 
+        id, 
+        tahun, 
+        bulan, 
+        DATE_FORMAT(tanggal_mulai, '%Y-%m-%d') AS tanggal_mulai, 
+        DATE_FORMAT(tanggal_selesai, '%Y-%m-%d') AS tanggal_selesai, 
+        nama_kegiatan, 
+        deskripsi, 
+        kategori, 
+        status 
+      FROM kalender_kegiatan 
+      WHERE 1=1
+    `;
     let params = [];
 
     if (tahun) {

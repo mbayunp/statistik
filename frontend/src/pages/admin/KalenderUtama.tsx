@@ -131,13 +131,41 @@ export default function KalenderUtama() {
   const getEventsForDate = (fullDateStr: string) => {
     return events.filter(e => {
       if (e.tanggal_mulai) {
-        if (e.tanggal_selesai) {
-          return fullDateStr >= e.tanggal_mulai && fullDateStr <= e.tanggal_selesai;
-        }
-        return e.tanggal_mulai === fullDateStr;
+        const startStr = e.tanggal_mulai.substring(0, 10);
+        const endStr = e.tanggal_selesai ? e.tanggal_selesai.substring(0, 10) : startStr;
+        return fullDateStr >= startStr && fullDateStr <= endStr;
       }
       return false;
     });
+  };
+
+  // Format tanggal Indonesia yang rapi (Contoh: "24 - 29 Agustus 2026" atau "24 Agustus 2026")
+  const formatEventDateRange = (event: EventItem) => {
+    if (!event.tanggal_mulai) {
+      return `Bulan ${MONTH_NAMES[event.bulan - 1]} ${event.tahun}`;
+    }
+
+    const startClean = event.tanggal_mulai.substring(0, 10);
+    const endClean = event.tanggal_selesai ? event.tanggal_selesai.substring(0, 10) : startClean;
+
+    const [startY, startM, startD] = startClean.split('-').map(Number);
+    const [endY, endM, endD] = endClean.split('-').map(Number);
+
+    if (!startY || !startM || !startD) return event.tanggal_mulai;
+
+    if (startClean === endClean || !event.tanggal_selesai) {
+      return `${startD} ${MONTH_NAMES[startM - 1]} ${startY}`;
+    }
+
+    if (startY === endY && startM === endM) {
+      return `${startD} - ${endD} ${MONTH_NAMES[startM - 1]} ${startY}`;
+    }
+
+    if (startY === endY) {
+      return `${startD} ${MONTH_NAMES[startM - 1]} - ${endD} ${MONTH_NAMES[endM - 1]} ${startY}`;
+    }
+
+    return `${startD} ${MONTH_NAMES[startM - 1]} ${startY} - ${endD} ${MONTH_NAMES[endM - 1]} ${endY}`;
   };
 
   // Kategori badge color
@@ -612,11 +640,9 @@ export default function KalenderUtama() {
 
             <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 text-xs font-bold text-slate-600">
               <div className="flex items-center gap-2">
-                <Clock size={16} className="text-emerald-500" />
+                <Clock size={16} className="text-emerald-500 shrink-0" />
                 <span>
-                  {selectedEvent.tanggal_mulai 
-                    ? `${selectedEvent.tanggal_mulai} s.d. ${selectedEvent.tanggal_selesai || selectedEvent.tanggal_mulai}`
-                    : `Bulan ${MONTH_NAMES[selectedEvent.bulan - 1]} ${selectedEvent.tahun}`}
+                  {formatEventDateRange(selectedEvent)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
