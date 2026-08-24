@@ -21,7 +21,12 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const prefix = file.fieldname === 'file_laporan' ? 'laporan-' : 'file-';
+        let prefix = 'file-';
+        if (file.fieldname === 'file_laporan') {
+            prefix = 'laporan-';
+        } else if (file.fieldname === 'file_attachment' || file.fieldname === 'file_form') {
+            prefix = 'form-';
+        }
         cb(null, prefix + uniqueSuffix + path.extname(file.originalname)); 
     }
 });
@@ -39,8 +44,28 @@ const fileFilter = (req, file, cb) => {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ];
   
+    // 0. FORMULIR ATTACHMENT / MEDIA (File Upload, Webcam photo, Signature, Banner)
+    if (file.fieldname === 'file_attachment' || file.fieldname === 'file_form') {
+        const allowedFormTypes = [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml', 'image/gif',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/plain',
+            'text/csv',
+            'application/zip',
+            'application/x-zip-compressed'
+        ];
+        if (allowedFormTypes.includes(file.mimetype) || file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Format file tidak didukung untuk lampiran formulir!'), false);
+        }
+    }
     // 1. BERKAS ARSIP
-    if (file.fieldname === 'file_arsip') {
+    else if (file.fieldname === 'file_arsip') {
         if (arsipTypes.includes(file.mimetype)) {
             cb(null, true);
         } else {

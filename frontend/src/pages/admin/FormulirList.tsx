@@ -146,7 +146,10 @@ const FormulirList: React.FC = () => {
 
               {/* Card Footer - Actions */}
               <div className="p-4 grid grid-cols-3 gap-2 mt-auto">
-                <button className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-colors">
+                <button 
+                  onClick={() => navigate(`/admin/formulir/edit/${form.id}`)}
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
+                >
                   <Settings size={18} />
                   <span className="text-[9px] font-black uppercase tracking-wider">Edit</span>
                 </button>

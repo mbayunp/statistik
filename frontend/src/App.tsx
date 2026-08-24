@@ -130,6 +130,7 @@ const App: React.FC = () => {
           <Route path="laporan-kinerja" element={<LaporanKinerjaPegawai />} />
           <Route path="formulir" element={<FormulirList />} />
           <Route path="formulir/builder" element={<FormBuilder />} />
+          <Route path="formulir/edit/:id" element={<FormBuilder />} />
           <Route path="formulir/responses/:formId" element={<FormulirResponses />} />
           <Route path="tautan" element={<ShortlinkList />} />
           <Route path="riwayat-aktivitas" element={<ActivityLogPage />} />
