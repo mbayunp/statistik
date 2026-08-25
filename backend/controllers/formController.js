@@ -431,7 +431,7 @@ const formController = {
             const { formId } = req.params;
 
             // Ambil info formulir
-            const [forms] = await db.execute('SELECT id, title, slug FROM forms WHERE id = ?', [formId]);
+            const [forms] = await db.execute('SELECT id, title, slug, description FROM forms WHERE id = ?', [formId]);
             if (forms.length === 0) {
                 return res.status(404).json({ success: false, message: 'Formulir tidak ditemukan' });
             }

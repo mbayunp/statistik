@@ -4,6 +4,22 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableRow,
+  TableCell,
+  ImageRun,
+  WidthType,
+  AlignmentType,
+  HeadingLevel,
+  TextRun,
+  PageOrientation,
+  VerticalAlign
+} from 'docx';
+import { saveAs } from 'file-saver';
+import {
   ArrowLeft, Users, FileSpreadsheet, Loader2, Inbox, Calendar,
   ExternalLink, MapPin, Star, FileText, Image as ImageIcon, X,
   Download, ZoomIn
@@ -59,11 +75,80 @@ const formatMediaSource = (value: unknown): string => {
   return str;
 };
 
+// Helper mengambil Buffer gambar untuk Word (.docx)
+const fetchImageBuffer = async (urlOrBase64: unknown): Promise<Uint8Array | null> => {
+  try {
+    if (!urlOrBase64 || typeof urlOrBase64 !== 'string') return null;
+    const str = urlOrBase64.trim();
+    if (!str) return null;
+
+    // 1. Data URL Base64 (data:image/...)
+    if (str.startsWith('data:image/') || str.startsWith('data:application/')) {
+      const parts = str.split(',');
+      if (parts.length < 2) return null;
+      const base64Data = parts[1];
+      const binaryString = window.atob(base64Data);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    // 2. Raw Base64 string tanpa header data:
+    if (
+      str.startsWith('iVBORw0KGgo') ||
+      str.startsWith('/9j/') ||
+      str.startsWith('R0lGOD') ||
+      (str.length > 100 && !str.includes('/') && !str.includes(' ') && !str.includes(':'))
+    ) {
+      const binaryString = window.atob(str);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    // 3. Absolute atau Relative URL (/uploads/...)
+    const fullUrl = formatMediaSource(str);
+    if (!fullUrl) return null;
+
+    const response = await fetch(fullUrl);
+    if (!response.ok) {
+      console.warn(`Gagal fetch gambar Word (status: ${response.status}):`, fullUrl);
+      return null;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
+  } catch (err) {
+    console.error('Gagal memuat buffer gambar untuk Word:', err);
+    return null;
+  }
+};
+
+const getImageType = (val: unknown): 'png' | 'jpg' | 'gif' => {
+  if (typeof val === 'string') {
+    const lower = val.toLowerCase();
+    if (lower.includes('data:image/jpeg') || lower.includes('data:image/jpg') || lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+      return 'jpg';
+    }
+    if (lower.includes('data:image/gif') || lower.endsWith('.gif')) {
+      return 'gif';
+    }
+  }
+  return 'png';
+};
+
 const FormulirResponses: React.FC = () => {
   const { formId } = useParams<{ formId: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [formTitle, setFormTitle] = useState('');
+  const [formSlug, setFormSlug] = useState('');
+  const [formDescription, setFormDescription] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [responses, setResponses] = useState<ResponseData[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -74,6 +159,8 @@ const FormulirResponses: React.FC = () => {
       const res = await axios.get(`${API_BASE_URL}/api/formulir/responses/${formId}`);
       if (res.data.success) {
         setFormTitle(res.data.data.form?.title || '');
+        setFormSlug(res.data.data.form?.slug || '');
+        setFormDescription(res.data.data.form?.description || '');
         // Filter: Hanya tampilkan pertanyaan bertipe 'input' (bukan blok layout)
         const allQuestions: Question[] = res.data.data.questions || [];
         const inputQuestions = allQuestions.filter(
@@ -130,6 +217,336 @@ const FormulirResponses: React.FC = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Respon Formulir');
     const safeTitle = (formTitle || `Form_${formId}`).replace(/[^a-zA-Z0-9_-]/g, '_');
     XLSX.writeFile(workbook, `Rekap_Respon_${safeTitle}.xlsx`);
+  };
+
+  // Fungsi Export Word (.docx) Dinamis & Komprehensif
+  const handleExportWord = async () => {
+    if (responses.length === 0) {
+      return Swal.fire('Peringatan', 'Tidak ada data respon untuk diekspor!', 'warning');
+    }
+
+    // Loading Feedback SweetAlert2
+    Swal.fire({
+      title: 'Membuat Dokumen Word...',
+      html: `
+        <div class="py-2 text-center">
+          <p class="text-sm text-slate-600 mb-2 font-medium">Sedang memproses seluruh baris respon dan mengonversi media / tanda tangan digital.</p>
+          <p class="text-xs text-slate-400">Mohon tunggu beberapa saat...</p>
+        </div>
+      `,
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      // 1. Tentukan Orientasi Halaman (Landscape jika pertanyaan > 4)
+      const isLandscape = questions.length > 4;
+      const exportTimeStr = new Date().toLocaleString('id-ID', {
+        dateStyle: 'full',
+        timeStyle: 'medium'
+      });
+
+      // 2. Buat Header Dokumen Word
+      const documentHeaders = [
+        new Paragraph({
+          text: `REKAPITULASI RESPON FORMULIR: ${(formTitle || 'FORMULIR').toUpperCase()}`,
+          heading: HeadingLevel.HEADING_1,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 120 }
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 60 },
+          children: [
+            new TextRun({ text: 'Waktu Export: ', bold: true, size: 20 }),
+            new TextRun({ text: `${exportTimeStr}   |   `, size: 20 }),
+            new TextRun({ text: 'Total Respon: ', bold: true, size: 20 }),
+            new TextRun({ text: `${responses.length} Responden`, size: 20 })
+          ]
+        })
+      ];
+
+      if (formDescription) {
+        documentHeaders.push(
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+            children: [
+              new TextRun({ text: 'Deskripsi: ', bold: true, italics: true, size: 18, color: '64748B' }),
+              new TextRun({ text: formDescription, italics: true, size: 18, color: '64748B' })
+            ]
+          })
+        );
+      } else {
+        documentHeaders.push(new Paragraph({ spacing: { after: 160 }, children: [] }));
+      }
+
+      // 3. Header Tabel
+      const tableHeaderRow = new TableRow({
+        tableHeader: true,
+        children: [
+          new TableCell({
+            width: { size: 5, type: WidthType.PERCENTAGE },
+            shading: { fill: '1E293B' },
+            verticalAlign: VerticalAlign.CENTER,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text: 'No', bold: true, color: 'FFFFFF', size: 18 })]
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 15, type: WidthType.PERCENTAGE },
+            shading: { fill: '1E293B' },
+            verticalAlign: VerticalAlign.CENTER,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text: 'Waktu Submit', bold: true, color: 'FFFFFF', size: 18 })]
+              })
+            ]
+          }),
+          ...questions.map((q) => {
+            return new TableCell({
+              shading: { fill: '1E293B' },
+              verticalAlign: VerticalAlign.CENTER,
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: q.question_text || 'Pertanyaan', bold: true, color: 'FFFFFF', size: 18 })]
+                })
+              ]
+            });
+          })
+        ]
+      });
+
+      // 4. Baris Data Tabel dengan Konversi Asinkron
+      const dataRows = await Promise.all(
+        responses.map(async (resp, index) => {
+          const rowCells: TableCell[] = [
+            // Sel No
+            new TableCell({
+              width: { size: 5, type: WidthType.PERCENTAGE },
+              verticalAlign: VerticalAlign.CENTER,
+              shading: { fill: index % 2 === 1 ? 'F8FAFC' : 'FFFFFF' },
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: String(index + 1), size: 18, color: '334155' })]
+                })
+              ]
+            }),
+            // Sel Waktu Submit
+            new TableCell({
+              width: { size: 15, type: WidthType.PERCENTAGE },
+              verticalAlign: VerticalAlign.CENTER,
+              shading: { fill: index % 2 === 1 ? 'F8FAFC' : 'FFFFFF' },
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [
+                    new TextRun({
+                      text: new Date(resp.submitted_at).toLocaleString('id-ID'),
+                      size: 18,
+                      color: '475569'
+                    })
+                  ]
+                })
+              ]
+            })
+          ];
+
+          // Sel untuk setiap pertanyaan
+          for (const q of questions) {
+            const rawVal = resp.answers[q.id];
+            let val = rawVal;
+            if (typeof rawVal === 'string' && (rawVal.startsWith('{') || rawVal.startsWith('['))) {
+              try {
+                val = JSON.parse(rawVal);
+              } catch {
+                val = rawVal;
+              }
+            }
+
+            const isSignatureOrCamera = ['signature', 'camera_capture'].includes(q.question_type);
+            const isImageString =
+              typeof val === 'string' &&
+              (val.startsWith('data:image/') ||
+                val.startsWith('iVBORw0KGgo') ||
+                val.startsWith('/9j/') ||
+                val.includes('/uploads/') ||
+                val.endsWith('.png') ||
+                val.endsWith('.jpg') ||
+                val.endsWith('.jpeg') ||
+                val.endsWith('.webp'));
+
+            let cellParagraph: Paragraph;
+
+            // A. Media Tanda Tangan / Snapshot Kamera / Gambar
+            if (isSignatureOrCamera || isImageString) {
+              const imageBuffer = await fetchImageBuffer(val);
+              if (imageBuffer) {
+                cellParagraph = new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [
+                    new ImageRun({
+                      data: imageBuffer,
+                      transformation: {
+                        width: 100,
+                        height: 50
+                      },
+                      type: getImageType(val)
+                    })
+                  ]
+                });
+              } else {
+                cellParagraph = new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [
+                    new TextRun({
+                      text: isSignatureOrCamera ? '(Tanpa TTD)' : '(Tanpa Foto)',
+                      italics: true,
+                      size: 16,
+                      color: '94A3B8'
+                    })
+                  ]
+                });
+              }
+            }
+            // B. Geolocation Object
+            else if ((typeof val === 'object' && val !== null && 'lat' in val && 'lng' in val) || q.question_type === 'geolocation') {
+              if (typeof val === 'object' && val !== null && 'lat' in val && 'lng' in val) {
+                const geo = val as { lat: number; lng: number };
+                cellParagraph = new Paragraph({
+                  alignment: AlignmentType.LEFT,
+                  children: [
+                    new TextRun({ text: `Lat: ${geo.lat}, Lng: ${geo.lng}`, size: 18, color: '1E40AF', bold: true })
+                  ]
+                });
+              } else {
+                cellParagraph = new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: String(val || '-'), size: 18, color: '64748B' })]
+                });
+              }
+            }
+            // C. File Upload / Dokumen Lampiran
+            else if (
+              q.question_type === 'file_upload' ||
+              (typeof val === 'string' &&
+                (val.includes('/uploads/') || val.endsWith('.pdf') || val.endsWith('.docx') || val.endsWith('.xlsx') || val.endsWith('.zip')))
+            ) {
+              const fileUrl = formatMediaSource(val);
+              const fileName = (typeof val === 'string' ? val.split('/').pop() : '') || 'Lampiran Berkas';
+              cellParagraph = new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({ text: `[Berkas] ${fileName}`, size: 18, color: '0369A1', bold: true }),
+                  new TextRun({ text: `\n${fileUrl}`, size: 14, color: '64748B', italics: true })
+                ]
+              });
+            }
+            // D. Rating Bintang
+            else if (q.question_type === 'rating') {
+              const ratingNum = Number(val) || 0;
+              cellParagraph = new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({ text: `⭐ ${ratingNum} / 5`, size: 18, color: 'D97706', bold: true })
+                ]
+              });
+            }
+            // E. Nilai Kosong
+            else if (val === undefined || val === null || val === '') {
+              cellParagraph = new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text: '-', size: 18, color: '94A3B8' })]
+              });
+            }
+            // F. Text Biasa / Array Checkbox
+            else {
+              const textContent = Array.isArray(val)
+                ? val.join(', ')
+                : typeof val === 'object'
+                ? JSON.stringify(val)
+                : String(val);
+              cellParagraph = new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [new TextRun({ text: textContent, size: 18, color: '334155' })]
+              });
+            }
+
+            rowCells.push(
+              new TableCell({
+                verticalAlign: VerticalAlign.CENTER,
+                shading: { fill: index % 2 === 1 ? 'F8FAFC' : 'FFFFFF' },
+                children: [cellParagraph]
+              })
+            );
+          }
+
+          return new TableRow({
+            children: rowCells
+          });
+        })
+      );
+
+      // 5. Rakit Tabel Word
+      const wordTable = new Table({
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE
+        },
+        rows: [tableHeaderRow, ...dataRows]
+      });
+
+      // 6. Buat Objek Dokumen docx
+      const doc = new Document({
+        sections: [
+          {
+            properties: {
+              page: {
+                size: {
+                  orientation: isLandscape ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT
+                },
+                margin: {
+                  top: 720,
+                  bottom: 720,
+                  left: 720,
+                  right: 720
+                }
+              }
+            },
+            children: [
+              ...documentHeaders,
+              wordTable
+            ]
+          }
+        ]
+      });
+
+      // 7. Simpan File (.docx)
+      const blob = await Packer.toBlob(doc);
+      const safeSlug = (formSlug || formTitle || `Form_${formId}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+      saveAs(blob, `Rekap_Formulir_${safeSlug}_${Date.now()}.docx`);
+
+      Swal.close();
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil Diekspor!',
+        text: 'Dokumen Word (.docx) telah berhasil diunduh.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error export Word:', error);
+      Swal.close();
+      Swal.fire('Error', 'Gagal membuat dan mengekspor dokumen Word (.docx)', 'error');
+    }
   };
 
   // Helper Renderer Sel Jawaban Cerdas
@@ -290,12 +707,22 @@ const FormulirResponses: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleExportExcel}
-          className="bg-emerald-500 text-white px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-600 shadow-xl transition-all active:scale-95 shrink-0"
-        >
-          <FileSpreadsheet size={20} /> Export Excel
-        </button>
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <button
+            onClick={handleExportWord}
+            className="bg-blue-600 text-white px-5 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 shadow-xl shadow-blue-600/20 transition-all active:scale-95 cursor-pointer"
+            title="Download Rekap Respon dalam Format Word (.docx)"
+          >
+            <FileText size={18} /> Export Word
+          </button>
+          <button
+            onClick={handleExportExcel}
+            className="bg-emerald-500 text-white px-5 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-600 shadow-xl shadow-emerald-500/20 transition-all active:scale-95 shrink-0 cursor-pointer"
+            title="Download Rekap Respon dalam Format Excel (.xlsx)"
+          >
+            <FileSpreadsheet size={18} /> Export Excel
+          </button>
+        </div>
       </div>
 
       {/* Tabel Hasil Respon */}
