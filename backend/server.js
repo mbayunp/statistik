@@ -5,6 +5,8 @@ require('dotenv').config();
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://10.50.14.217:5173')
   .split(',')
   .map(origin => origin.trim());
@@ -25,10 +27,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(express.json({ limit: '10mb' })); 
-app.use(express.urlencoded({ limit: '10mb', extended: true })); 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const kegiatanRoutes = require('./routes/kegiatanRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -63,25 +65,25 @@ app.use('/api/logs', logRoutes);
 app.use('/api/kalender', kalenderRoutes);
 
 app.get('/', (req, res) => {
-    res.json({ 
-        message: "API Backend Berjalan Lancar 🚀",
-        upload_status: "Folder static /uploads aktif"
-    });
+  res.json({
+    message: "API Backend Berjalan Lancar 🚀",
+    upload_status: "Folder static /uploads aktif"
+  });
 });
 
 app.use((err, req, res, next) => {
-    console.error("Global Error Log:", err.stack);
-    res.status(500).json({ 
-        success: false, 
-        message: "Terjadi kesalahan internal pada server",
-        error: process.env.NODE_ENV === 'development' ? err.message : {}
-    });
+  console.error("Global Error Log:", err.stack);
+  res.status(500).json({
+    success: false,
+    message: "Terjadi kesalahan internal pada server",
+    error: process.env.NODE_ENV === 'development' ? err.message : {}
+  });
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server berjalan di semua interface (0.0.0.0:${PORT})`);
-    console.log(`🏠 Akses lokal: http://localhost:${PORT}`);
-    console.log(`🌐 Akses jaringan: http://10.50.14.217:${PORT}`); 
+  console.log(`✅ Server berjalan di semua interface (0.0.0.0:${PORT})`);
+  console.log(`🏠 Akses lokal: http://localhost:${PORT}`);
+  console.log(`🌐 Akses jaringan: http://10.50.14.217:${PORT}`);
 });
