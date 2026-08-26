@@ -6,13 +6,14 @@ const rateLimit = require('express-rate-limit');
  */
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 menit
-    max: 5, // maksimal 5 kali percobaan
+    max: 50, // Naikkan batas percobaan menjadi 50
+    skipSuccessfulRequests: true, // Login yang sukses tidak akan mengurangi kuota
     message: {
         success: false,
         message: "Terlalu banyak percobaan gagal! Akses diblokir sementara selama 15 menit."
     },
-    standardHeaders: true, // Kembalikan informasi rate limit pada header `RateLimit-*`
-    legacyHeaders: false, // Nonaktifkan header `X-RateLimit-*`
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 
 module.exports = { authLimiter };
