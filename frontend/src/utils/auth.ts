@@ -11,7 +11,7 @@ export const isTokenExpired = (token: string | null): boolean => {
   try {
     const payloadBase64 = token.split('.')[1];
     if (!payloadBase64) return true;
-    
+
     // Decode base64 URL safe
     const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
@@ -21,7 +21,7 @@ export const isTokenExpired = (token: string | null): boolean => {
         .join('')
     );
     const payload = JSON.parse(jsonPayload);
-    
+
     if (payload && payload.exp) {
       // payload.exp is in seconds, Date.now() is in milliseconds
       return Date.now() >= payload.exp * 1000;
@@ -70,7 +70,12 @@ export const setupAxiosInterceptors = () => {
   axios.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem('token');
-      if (token && !config.headers['Authorization']) {
+      const requestUrl = config.url || '';
+
+      // Jangan kirim token Authorization lokal ke API eksternal Garut Satu Data
+      const isExternalApi = requestUrl.includes('/api-garut') || requestUrl.includes('satudata-api');
+
+      if (token && !config.headers['Authorization'] && !isExternalApi) {
         config.headers['Authorization'] = `Bearer ${token}`;
       }
       return config;
@@ -86,13 +91,19 @@ export const setupAxiosInterceptors = () => {
         const status = error.response.status;
         const requestUrl = error.config?.url || '';
 
-        // Exclude login & PIN authentication endpoints where 401/403 mean wrong password/PIN
-        const isAuthEndpoint = 
+        // 1. Abaikan endpoint auth (login/PIN)
+        const isAuthEndpoint =
           requestUrl.includes('/api/auth/login') ||
           requestUrl.includes('/api/auth/verify-pin') ||
           requestUrl.includes('/api/auth/reset-password');
 
-        if ((status === 401 || status === 403) && !isAuthEndpoint) {
+        // 2. Abaikan API eksternal Satu Data (agar 403 dari luar tidak menendang user login)
+        const isExternalApi =
+          requestUrl.includes('/api-garut') ||
+          requestUrl.includes('satudata-api');
+
+        // Hanya force logout jika error 401/403 berasal dari API internal admin
+        if ((status === 401 || status === 403) && !isAuthEndpoint && !isExternalApi) {
           const serverMessage = error.response.data?.message;
           handleSessionExpired(serverMessage);
         }
