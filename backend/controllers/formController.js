@@ -260,6 +260,7 @@ const formController = {
 
             const parsedQuestions = questions.map(q => ({
                 ...q,
+                is_required: Boolean(q.is_required),
                 options: safeJsonParse(q.options, []),
                 validation_rules: safeJsonParse(q.validation_rules, {}),
                 layout_config: safeJsonParse(q.layout_config, {})
@@ -294,6 +295,7 @@ const formController = {
 
             const parsedQuestions = questions.map(q => ({
                 ...q,
+                is_required: Boolean(q.is_required),
                 options: safeJsonParse(q.options, []),
                 validation_rules: safeJsonParse(q.validation_rules, {}),
                 layout_config: safeJsonParse(q.layout_config, {})
@@ -491,6 +493,66 @@ const formController = {
         } catch (error) {
             console.error('Error getFormResponses:', error);
             res.status(500).json({ success: false, message: 'Gagal memuat respon formulir' });
+        }
+    },
+
+    // 10. Menghapus 1 Respon Jawaban Formulir (Berdasarkan response_id)
+    deleteFormResponse: async (req, res) => {
+        try {
+            const { responseId } = req.params;
+            const [result] = await db.execute('DELETE FROM form_responses WHERE id = ?', [responseId]);
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, message: 'Respon tidak ditemukan atau sudah dihapus' });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Respon formulir berhasil dihapus'
+            });
+        } catch (error) {
+            console.error('Error deleteFormResponse:', error);
+            res.status(500).json({ success: false, message: 'Gagal menghapus respon formulir', error: error.message });
+        }
+    },
+
+    // 11. Menghapus Beberapa Respon Sekaligus (Bulk Delete)
+    bulkDeleteResponses: async (req, res) => {
+        try {
+            const { response_ids } = req.body;
+            if (!response_ids || !Array.isArray(response_ids) || response_ids.length === 0) {
+                return res.status(400).json({ success: false, message: 'Daftar ID respon tidak valid atau kosong' });
+            }
+
+            const placeholders = response_ids.map(() => '?').join(',');
+            const [result] = await db.execute(
+                `DELETE FROM form_responses WHERE id IN (${placeholders})`,
+                response_ids
+            );
+
+            res.status(200).json({
+                success: true,
+                message: `${result.affectedRows} respon berhasil dihapus`
+            });
+        } catch (error) {
+            console.error('Error bulkDeleteResponses:', error);
+            res.status(500).json({ success: false, message: 'Gagal menghapus beberapa respon terpilih', error: error.message });
+        }
+    },
+
+    // 12. Mengosongkan / Menghapus Seluruh Respon untuk 1 Formulir
+    deleteAllResponsesByForm: async (req, res) => {
+        try {
+            const { formId } = req.params;
+            const [result] = await db.execute('DELETE FROM form_responses WHERE form_id = ?', [formId]);
+
+            res.status(200).json({
+                success: true,
+                message: `Seluruh respon (${result.affectedRows}) berhasil dikosongkan`
+            });
+        } catch (error) {
+            console.error('Error deleteAllResponsesByForm:', error);
+            res.status(500).json({ success: false, message: 'Gagal mengosongkan seluruh respon formulir', error: error.message });
         }
     }
 };

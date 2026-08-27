@@ -854,7 +854,7 @@ const PublicForm: React.FC = () => {
                 {/* Header Pertanyaan */}
                 <div>
                   <h3 className="text-base sm:text-lg font-bold text-slate-800 leading-snug">
-                    {q.question_text} {q.is_required && <span className="text-red-500 ml-1">*</span>}
+                    {q.question_text} {q.is_required ? <span className="text-red-500 ml-1" title="Wajib diisi">*</span> : null}
                   </h3>
                   {q.description && (
                     <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">

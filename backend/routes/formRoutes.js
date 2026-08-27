@@ -13,8 +13,11 @@ router.post('/upload', upload.single('file_attachment'), formController.uploadMe
 // 3. Submit respon publik
 router.post('/submit', formController.submitResponse);
 
-// 4. Rekap respon & Detail admin
+// 4. Rekap respon & Manajemen respon
 router.get('/responses/:formId', formController.getFormResponses);
+router.delete('/responses/:responseId', formController.deleteFormResponse);
+router.post('/responses/bulk-delete', formController.bulkDeleteResponses);
+router.delete('/responses/form/:formId/all', formController.deleteAllResponsesByForm);
 router.get('/admin/:id', formController.getFormByIdAdmin);
 
 // 5. Update & Delete formulir
