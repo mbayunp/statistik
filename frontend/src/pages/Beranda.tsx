@@ -98,28 +98,36 @@ const Beranda: React.FC = () => {
       })
       .catch(err => console.error("Gagal menarik data kegiatan internal:", err));
 
-    // 2. Ambil data gabungan dari API eksternal
+    // 2. Ambil data gabungan dari API eksternal (Prioritas: Proxy Backend Internal -> Proxy Nginx -> Direct)
     const fetchCountsAndPengaturan = async () => {
       try {
         const [resPengaturan, resCount] = await Promise.all([
-          axios.get('/api-garut/api/pengaturan').catch(() => axios.get('https://satudata-api.garutkab.go.id/api/pengaturan')).catch(() => ({ data: null })),
-          axios.get('/api-garut/api/count').catch(() => axios.get('https://satudata-api.garutkab.go.id/api/count')).catch(() => ({ data: null }))
+          axios.get(`${API_BASE_URL}/api/satudata/pengaturan`)
+            .catch(() => axios.get('/api-garut/api/pengaturan'))
+            .catch(() => axios.get('https://satudata-api.garutkab.go.id/api/pengaturan'))
+            .catch(() => ({ data: null })),
+          axios.get(`${API_BASE_URL}/api/satudata/count`)
+            .catch(() => axios.get('/api-garut/api/count'))
+            .catch(() => axios.get('https://satudata-api.garutkab.go.id/api/count'))
+            .catch(() => ({ data: null }))
         ]);
         
         if (resCount && resCount.data) {
           const apiStats = typeof resCount.data.dataset !== 'undefined' ? resCount.data : (resCount.data.data || resCount.data);
           
-          setStatsData({
-            dataset: Number(apiStats.dataset) || 0,
-            data: Number(apiStats.data) || 0,
-            visualisasi: Number(apiStats.visualisasi) || 0,
-            infografis: Number(apiStats.infografis) || 0
-          });
+          if (apiStats && typeof apiStats === 'object') {
+            setStatsData({
+              dataset: Number(apiStats.dataset) || 0,
+              data: Number(apiStats.data) || 0,
+              visualisasi: Number(apiStats.visualisasi) || 0,
+              infografis: Number(apiStats.infografis) || 0
+            });
+          }
         }
 
         if (resPengaturan && resPengaturan.data) {
           const pengObj = resPengaturan.data.data || resPengaturan.data;
-          if (pengObj && pengObj.jumlah_penduduk) {
+          if (pengObj && typeof pengObj === 'object' && pengObj.jumlah_penduduk) {
             setPengaturan(pengObj);
           }
         }

@@ -149,7 +149,9 @@ const Dashboard: React.FC = () => {
       // Hitung total permohonan
       let totalPermohonan = 0;
       try {
-        const resPermohonan = await axios.get('/api-garut/api/request-data/total');
+        const resPermohonan = await axios.get(`${API_BASE_URL}/api/satudata/request-data/total`)
+          .catch(() => axios.get('/api-garut/api/request-data/total'))
+          .catch(() => axios.get('https://satudata-api.garutkab.go.id/api/request-data/total'));
         const dataPermohonan = (resPermohonan.data?.data || []) as PermohonanItem[];
         totalPermohonan = dataPermohonan.reduce((sum: number, item: PermohonanItem) => {
           return sum + (item.jumlah_selesai + item.jumlah_ditolak + item.jumlah_diproses + item.dalam_pengajuan);

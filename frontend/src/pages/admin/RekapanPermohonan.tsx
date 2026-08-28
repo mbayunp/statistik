@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import logoGarut from '../../assets/images/logo.png';
 import logoGsd from '../../assets/images/logo-gsd.png';
+import { API_BASE_URL } from '../../config';
 
 const RekapanPermohonan: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,9 +31,11 @@ const RekapanPermohonan: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Menarik data langsung dari API Garut Satu Data
-      const res = await axios.get('/api-garut/api/request-data/total');
-      setData(res.data.data || []);
+      // Menarik data langsung dari API Garut Satu Data (Prioritas backend internal -> proxy nginx -> direct)
+      const res = await axios.get(`${API_BASE_URL}/api/satudata/request-data/total`)
+        .catch(() => axios.get('/api-garut/api/request-data/total'))
+        .catch(() => axios.get('https://satudata-api.garutkab.go.id/api/request-data/total'));
+      setData(res.data?.data || res.data || []);
     } catch (err) {
       console.error(err);
       Swal.fire('Error', 'Gagal memuat data dari server API', 'error');
