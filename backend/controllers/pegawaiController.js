@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 exports.getAllPegawai = async (req, res) => {
     try {
@@ -14,8 +15,18 @@ exports.createPegawai = async (req, res) => {
     try {
         const { nip, nama, jabatan, golongan } = req.body;
         const sql = "INSERT INTO pegawai (nip, nama, jabatan, golongan) VALUES (?, ?, ?, ?)";
-        await db.query(sql, [nip, nama, jabatan, golongan]);
-        res.status(201).json({ success: true, message: "Pegawai berhasil ditambahkan" });
+        const [result] = await db.query(sql, [nip, nama, jabatan, golongan]);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'PEGAWAI',
+            'CREATE',
+            `Menambahkan pegawai baru "${nama}" (NIP: ${nip || '-'}, Jabatan: ${jabatan || '-'})`
+        );
+
+        res.status(201).json({ success: true, message: "Pegawai berhasil ditambahkan", id: result.insertId });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -27,6 +38,16 @@ exports.updatePegawai = async (req, res) => {
         const { nip, nama, jabatan, golongan } = req.body;
         const sql = "UPDATE pegawai SET nip=?, nama=?, jabatan=?, golongan=? WHERE id=?";
         await db.query(sql, [nip, nama, jabatan, golongan, id]);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'PEGAWAI',
+            'UPDATE',
+            `Memperbarui data pegawai "${nama}" (ID: ${id})`
+        );
+
         res.json({ success: true, message: "Data pegawai diperbarui" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -36,7 +57,21 @@ exports.updatePegawai = async (req, res) => {
 exports.deletePegawai = async (req, res) => {
     try {
         const { id } = req.params;
+
+        const [rows] = await db.query("SELECT nama FROM pegawai WHERE id=?", [id]);
+        const nama = rows.length > 0 ? rows[0].nama : `ID ${id}`;
+
         await db.query("DELETE FROM pegawai WHERE id=?", [id]);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'PEGAWAI',
+            'DELETE',
+            `Menghapus data pegawai "${nama}" (ID: ${id})`
+        );
+
         res.json({ success: true, message: "Pegawai berhasil dihapus" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -50,6 +85,15 @@ exports.reorderPegawai = async (req, res) => {
             await db.query("UPDATE pegawai SET urutan = ? WHERE id = ?", [item.urutan, item.id]);
         }
         
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'PEGAWAI',
+            'UPDATE',
+            `Memperbarui susunan urutan hierarki data pegawai`
+        );
+
         res.json({ success: true, message: "Urutan berhasil diperbarui" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

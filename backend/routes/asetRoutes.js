@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const asetController = require('../controllers/asetController');
-
-router.post('/', asetController.createAset); 
+const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/', asetController.getAset);
-router.delete('/:id', asetController.deleteAset);
-router.put('/:id', asetController.updateAset);
+router.post('/', authMiddleware, asetController.createAset); 
+router.put('/:id', authMiddleware, asetController.updateAset);
+router.delete('/:id', authMiddleware, asetController.deleteAset);
 
 module.exports = router;

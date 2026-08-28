@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 // Ambil semua data berkas
 exports.getAllBerkas = async (req, res) => {
@@ -31,6 +32,15 @@ exports.createBerkas = async (req, res) => {
         ];
 
         const [result] = await db.query(sql, values);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'BERKAS',
+            'CREATE',
+            `Mengunggah berkas arsip baru "${nama_berkas}" (Kategori: ${kategori}, Tahun: ${tahun})`
+        );
         
         res.status(201).json({ success: true, message: "Berkas arsip berhasil disimpan", id: result.insertId });
     } catch (error) {
@@ -43,7 +53,21 @@ exports.createBerkas = async (req, res) => {
 exports.deleteBerkas = async (req, res) => {
     try {
         const { id } = req.params;
+
+        const [rows] = await db.query("SELECT nama_berkas FROM berkas_arsip WHERE id=?", [id]);
+        const nama = rows.length > 0 ? rows[0].nama_berkas : `ID ${id}`;
+
         await db.query("DELETE FROM berkas_arsip WHERE id=?", [id]);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'BERKAS',
+            'DELETE',
+            `Menghapus berkas arsip "${nama}" (ID: ${id})`
+        );
+
         res.json({ success: true, message: "Berkas arsip berhasil dihapus permanen" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

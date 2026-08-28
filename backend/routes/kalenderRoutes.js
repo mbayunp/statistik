@@ -2,11 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const kalenderController = require('../controllers/kalenderController');
-// const { verifyToken } = require('../middleware/authMiddleware'); // Jika memakai auth guard
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Endpoint CRUD Kalender
 router.get('/', kalenderController.getKalender);
-router.post('/', kalenderController.createKalender);
-router.delete('/:id', kalenderController.deleteKalender);
+router.post('/', authMiddleware, kalenderController.createKalender);
+router.delete('/:id', authMiddleware, kalenderController.deleteKalender);
 
 module.exports = router;

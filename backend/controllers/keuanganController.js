@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 exports.getLaporan = async (req, res) => {
     try {
@@ -41,6 +42,16 @@ exports.createLaporan = async (req, res) => {
         ];
 
         const [result] = await db.query(sql, values);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'KEUANGAN',
+            'CREATE',
+            `Menambahkan laporan keuangan ${jenis_laporan} "${judul_laporan}" (Tahun ${tahun} - ${periode})`
+        );
+
         res.status(201).json({ success: true, message: "Laporan berhasil disimpan", id: result.insertId });
     } catch (error) {
         console.error("ERROR KEUANGAN:", error);
@@ -50,7 +61,22 @@ exports.createLaporan = async (req, res) => {
 
 exports.deleteLaporan = async (req, res) => {
     try {
-        await db.query("DELETE FROM laporan_keuangan WHERE id=?", [req.params.id]);
+        const { id } = req.params;
+
+        const [rows] = await db.query("SELECT judul_laporan, jenis_laporan FROM laporan_keuangan WHERE id=?", [id]);
+        const judul = rows.length > 0 ? `"${rows[0].judul_laporan}" (${rows[0].jenis_laporan})` : `ID ${id}`;
+
+        await db.query("DELETE FROM laporan_keuangan WHERE id=?", [id]);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'KEUANGAN',
+            'DELETE',
+            `Menghapus laporan keuangan ${judul} (ID: ${id})`
+        );
+
         res.json({ success: true, message: "Laporan berhasil dihapus" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

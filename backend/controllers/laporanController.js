@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 exports.uploadLaporan = async (req, res) => {
     try {
@@ -20,9 +21,18 @@ exports.uploadLaporan = async (req, res) => {
 
         // Tambahkan kategori ke query INSERT
         const query = 'INSERT INTO laporan_bulanan (bulan, tahun, kategori, nama_file, file_path) VALUES (?, ?, ?, ?, ?)';
-        await db.execute(query, [bulan, tahun, kategori, namaFile, filePath]);
+        const [result] = await db.execute(query, [bulan, tahun, kategori, namaFile, filePath]);
 
-        res.status(201).json({ success: true, message: 'Laporan berhasil diunggah!' });
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'LAPORAN_BULANAN',
+            'CREATE',
+            `Mengunggah file laporan bulanan tenaga ahli "${namaFile}" (${kategori} - ${bulan} ${tahun})`
+        );
+
+        res.status(201).json({ success: true, message: 'Laporan berhasil diunggah!', id: result.insertId });
     } catch (error) {
         console.error('Error upload laporan:', error);
         res.status(500).json({ success: false, message: 'Terjadi kesalahan pada server' });
@@ -45,8 +55,21 @@ exports.getLaporan = async (req, res) => {
 exports.deleteLaporan = async (req, res) => {
     try {
         const { id } = req.params;
+
+        const [rows] = await db.execute('SELECT nama_file, bulan, tahun, kategori FROM laporan_bulanan WHERE id = ?', [id]);
+        const info = rows.length > 0 ? `"${rows[0].nama_file}" (${rows[0].kategori} - ${rows[0].bulan} ${rows[0].tahun})` : `ID ${id}`;
+
         const query = 'DELETE FROM laporan_bulanan WHERE id = ?';
         await db.execute(query, [id]);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'LAPORAN_BULANAN',
+            'DELETE',
+            `Menghapus file laporan bulanan tenaga ahli ${info} (ID: ${id})`
+        );
         
         res.status(200).json({ success: true, message: 'Laporan berhasil dihapus!' });
     } catch (error) {

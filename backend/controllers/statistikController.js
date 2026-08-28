@@ -1,4 +1,5 @@
 const db = require('../config/db'); 
+const { logActivity } = require('../utils/logger');
 
 const statistikController = {
     // 1. Ambil semua data
@@ -23,8 +24,18 @@ const statistikController = {
 
             const sql = `INSERT INTO daftar_statistik (${columns}) VALUES (${placeholders})`;
             
-            await db.query(sql, values);
-            res.json({ success: true, message: "Data berhasil ditambahkan" });
+            const [result] = await db.query(sql, values);
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'STATISTIK_SEKTORAL',
+                'CREATE',
+                `Menambahkan daftar kegiatan statistik sektoral "${data.nama_kegiatan || 'Baru'}" (Tahun ${data.tahun || '-'})`
+            );
+
+            res.json({ success: true, message: "Data berhasil ditambahkan", id: result.insertId });
         } catch (error) {
             res.status(500).json({ success: false, message: "Gagal tambah data: " + error.message });
         }
@@ -43,6 +54,16 @@ const statistikController = {
             const sql = `UPDATE daftar_statistik SET ${setClause} WHERE id = ?`;
             
             await db.query(sql, values);
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'STATISTIK_SEKTORAL',
+                'UPDATE',
+                `Memperbarui data statistik sektoral "${data.nama_kegiatan || 'ID ' + id}" (ID: ${id})`
+            );
+
             res.json({ success: true, message: "Data berhasil diperbarui" });
         } catch (error) {
             res.status(500).json({ success: false, message: "Gagal update data: " + error.message });
@@ -53,7 +74,20 @@ const statistikController = {
     delete: async (req, res) => {
         const { id } = req.params;
         try {
+            const [rows] = await db.query('SELECT nama_kegiatan FROM daftar_statistik WHERE id = ?', [id]);
+            const nama = rows.length > 0 ? rows[0].nama_kegiatan : `ID ${id}`;
+
             await db.query('DELETE FROM daftar_statistik WHERE id = ?', [id]);
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'STATISTIK_SEKTORAL',
+                'DELETE',
+                `Menghapus kegiatan statistik sektoral "${nama}" (ID: ${id})`
+            );
+
             res.json({ success: true, message: "Data berhasil dihapus" });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });

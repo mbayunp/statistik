@@ -1,5 +1,6 @@
 // backend/controllers/kalenderController.js
-const db = require('../config/db'); // Sesuaikan koneksi database Anda
+const db = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 // Ambil semua kegiatan (bisa difilter ?tahun=2026&bulan=8)
 exports.getKalender = async (req, res) => {
@@ -42,11 +43,21 @@ exports.getKalender = async (req, res) => {
 exports.createKalender = async (req, res) => {
   try {
     const { tahun, bulan, tanggal_mulai, tanggal_selesai, nama_kegiatan, deskripsi, kategori, status } = req.body;
-    await db.query(
+    const [result] = await db.query(
       'INSERT INTO kalender_kegiatan (tahun, bulan, tanggal_mulai, tanggal_selesai, nama_kegiatan, deskripsi, kategori, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [tahun, bulan, tanggal_mulai || null, tanggal_selesai || null, nama_kegiatan, deskripsi, kategori, status]
     );
-    res.json({ success: true, message: 'Rencana kegiatan berhasil ditambahkan' });
+
+    // Log Aktivitas
+    const userId = req.user ? req.user.id : null;
+    await logActivity(
+      userId,
+      'KALENDER',
+      'CREATE',
+      `Menambahkan rencana kegiatan kalender "${nama_kegiatan}" (${bulan} ${tahun})`
+    );
+
+    res.json({ success: true, message: 'Rencana kegiatan berhasil ditambahkan', id: result.insertId });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -55,7 +66,22 @@ exports.createKalender = async (req, res) => {
 // Hapus kegiatan
 exports.deleteKalender = async (req, res) => {
   try {
-    await db.query('DELETE FROM kalender_kegiatan WHERE id = ?', [req.params.id]);
+    const { id } = req.params;
+
+    const [rows] = await db.query('SELECT nama_kegiatan FROM kalender_kegiatan WHERE id = ?', [id]);
+    const nama = rows.length > 0 ? rows[0].nama_kegiatan : `ID ${id}`;
+
+    await db.query('DELETE FROM kalender_kegiatan WHERE id = ?', [id]);
+
+    // Log Aktivitas
+    const userId = req.user ? req.user.id : null;
+    await logActivity(
+      userId,
+      'KALENDER',
+      'DELETE',
+      `Menghapus rencana kegiatan kalender "${nama}" (ID: ${id})`
+    );
+
     res.json({ success: true, message: 'Rencana kegiatan dihapus' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

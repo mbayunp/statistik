@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
+const { logActivity } = require('../utils/logger');
 
 exports.register = async (req, res) => {
     try {
@@ -24,6 +25,18 @@ exports.register = async (req, res) => {
 
         // Simpan ke database
         await User.create(username, hashedPassword);
+
+        // Ambil ID user yang baru dibuat untuk log
+        const newUser = await User.findByUsername(username);
+        const newUserId = newUser ? newUser.id : null;
+
+        // Log Aktivitas
+        await logActivity(
+            newUserId,
+            'AUTH',
+            'CREATE',
+            `Mendaftarkan akun administrator baru "${username}"`
+        );
 
         res.status(201).json({ success: true, message: 'Admin berhasil didaftarkan!' });
     } catch (error) {
@@ -53,6 +66,14 @@ exports.login = async (req, res) => {
             { id: user.id, username: user.username, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '1d' }
+        );
+
+        // Log Aktivitas Login Berhasil
+        await logActivity(
+            user.id,
+            'AUTH',
+            'LOGIN',
+            `Administrator "${user.username}" berhasil masuk ke sistem`
         );
 
         res.status(200).json({
@@ -101,6 +122,14 @@ exports.resetPasswordViaPin = async (req, res) => {
 
         // 4. Update ke database
         await User.updatePassword(username, hashedNewPassword);
+
+        // Log Aktivitas
+        await logActivity(
+            user.id,
+            'AUTH',
+            'UPDATE',
+            `Kata sandi akun "${username}" berhasil direset via Master PIN`
+        );
 
         res.status(200).json({ success: true, message: 'Password berhasil direset!' });
     } catch (error) {

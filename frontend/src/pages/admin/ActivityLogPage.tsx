@@ -253,11 +253,15 @@ const ActivityLogPage: React.FC = () => {
               <option value="PEGAWAI">Data Pegawai</option>
               <option value="SURAT">Surat Menyurat</option>
               <option value="ASET">Aset Bidang</option>
-              <option value="KEUANGAN">Realisasi Keuangan</option>
+              <option value="KEUANGAN">Realisasi Keuangan & PBJ</option>
               <option value="PENUGASAN">Form Penugasan</option>
               <option value="BERKAS">Berkas Arsip</option>
-              <option value="FORMULIR">Formulir</option>
-              <option value="SHORTLINK">Shortlink</option>
+              <option value="FORMULIR">Pembuat Formulir</option>
+              <option value="SHORTLINK">Tautan Pendek (Shortlink)</option>
+              <option value="KALENDER">Kalender Utama</option>
+              <option value="LAPORAN_BULANAN">Laporan Tenaga Ahli</option>
+              <option value="STATISTIK_SEKTORAL">Daftar Kegiatan Statistik</option>
+              <option value="AUTH">Autentikasi & Keamanan</option>
             </select>
           </div>
         </div>

@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 exports.getPenugasan = async (req, res) => {
     try {
@@ -22,6 +23,16 @@ exports.createPenugasan = async (req, res) => {
         const values = [tanggal_waktu, tempat, peserta, pelaksanaan, dokumentasi];
 
         const [result] = await db.query(sql, values);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'PENUGASAN',
+            'CREATE',
+            `Mencatat penugasan Kepala Bidang di "${tempat}" (Peserta: ${peserta || '-'})`
+        );
+
         res.status(201).json({ success: true, message: "Penugasan berhasil dicatat", id: result.insertId });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -30,7 +41,22 @@ exports.createPenugasan = async (req, res) => {
 
 exports.deletePenugasan = async (req, res) => {
     try {
-        await db.query("DELETE FROM penugasan WHERE id=?", [req.params.id]);
+        const { id } = req.params;
+
+        const [rows] = await db.query("SELECT tempat, tanggal_waktu FROM penugasan WHERE id=?", [id]);
+        const info = rows.length > 0 ? `di "${rows[0].tempat}"` : `ID ${id}`;
+
+        await db.query("DELETE FROM penugasan WHERE id=?", [id]);
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'PENUGASAN',
+            'DELETE',
+            `Menghapus catatan penugasan ${info} (ID: ${id})`
+        );
+
         res.json({ success: true, message: "Penugasan berhasil dihapus" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

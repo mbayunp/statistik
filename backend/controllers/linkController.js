@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 const linkController = {
     // 1. Ambil semua link untuk halaman Admin
@@ -29,9 +30,19 @@ const linkController = {
                 return res.status(400).json({ success: false, message: 'Tautan pendek / custom url tersebut sudah digunakan!' });
             }
 
+            const cleanedCode = short_code.toLowerCase().replace(/[^a-z0-9-]/g, '-');
             await db.execute(
                 'INSERT INTO short_links (original_url, short_code) VALUES (?, ?)',
-                [finalUrl, short_code.toLowerCase().replace(/[^a-z0-9-]/g, '-')] // Bersihkan spasi jadi strip
+                [finalUrl, cleanedCode]
+            );
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'SHORTLINK',
+                'CREATE',
+                `Membuat tautan pendek baru "/s/${cleanedCode}" -> ${finalUrl}`
             );
 
             res.status(201).json({ success: true, message: 'Short link berhasil dibuat!' });
@@ -67,7 +78,21 @@ const linkController = {
     deleteLink: async (req, res) => {
         try {
             const { id } = req.params;
+
+            const [rows] = await db.execute('SELECT short_code, original_url FROM short_links WHERE id = ?', [id]);
+            const codeInfo = rows.length > 0 ? `"/s/${rows[0].short_code}"` : `ID ${id}`;
+
             await db.execute('DELETE FROM short_links WHERE id = ?', [id]);
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'SHORTLINK',
+                'DELETE',
+                `Menghapus tautan pendek ${codeInfo} (ID: ${id})`
+            );
+
             res.status(200).json({ success: true, message: 'Link berhasil dihapus' });
         } catch (error) {
             console.error(error);

@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logActivity } = require('../utils/logger');
 
 // Helper function untuk parsing JSON yang aman
 function safeJsonParse(value, defaultValue = null) {
@@ -95,6 +96,16 @@ const formController = {
             }
 
             await connection.commit(); // Simpan permanen ke database
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'FORMULIR',
+                'CREATE',
+                `Membuat formulir baru "${title}" (Slug: /form/${slug})`
+            );
+
             res.status(201).json({ success: true, message: 'Formulir berhasil dibuat!', data: { id: formId, slug } });
         } catch (error) {
             await connection.rollback(); // Batalkan jika ada error
@@ -227,6 +238,16 @@ const formController = {
             }
 
             await connection.commit();
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'FORMULIR',
+                'UPDATE',
+                `Memperbarui formulir "${title || forms[0].title}" (ID: ${id})`
+            );
+
             res.status(200).json({ success: true, message: 'Formulir berhasil diperbarui!' });
         } catch (error) {
             await connection.rollback();
@@ -341,11 +362,24 @@ const formController = {
     deleteForm: async (req, res) => {
         try {
             const { id } = req.params;
+
+            const [forms] = await db.execute('SELECT title FROM forms WHERE id = ?', [id]);
+            const formTitle = forms.length > 0 ? forms[0].title : `ID ${id}`;
+
             const [result] = await db.execute('DELETE FROM forms WHERE id = ?', [id]);
             
             if (result.affectedRows === 0) {
                 return res.status(404).json({ success: false, message: 'Formulir tidak ditemukan' });
             }
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'FORMULIR',
+                'DELETE',
+                `Menghapus formulir "${formTitle}" (ID: ${id}) beserta seluruh pertanyaan dan responnya`
+            );
 
             res.status(200).json({ success: true, message: 'Formulir berhasil dihapus' });
         } catch (error) {
@@ -500,11 +534,27 @@ const formController = {
     deleteFormResponse: async (req, res) => {
         try {
             const { responseId } = req.params;
+
+            const [respRows] = await db.execute(
+                `SELECT f.title FROM form_responses fr JOIN forms f ON fr.form_id = f.id WHERE fr.id = ?`,
+                [responseId]
+            );
+            const formTitle = respRows.length > 0 ? `formulir "${respRows[0].title}"` : `Respon ID ${responseId}`;
+
             const [result] = await db.execute('DELETE FROM form_responses WHERE id = ?', [responseId]);
 
             if (result.affectedRows === 0) {
                 return res.status(404).json({ success: false, message: 'Respon tidak ditemukan atau sudah dihapus' });
             }
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'FORMULIR',
+                'DELETE',
+                `Menghapus 1 data respon responden (ID: ${responseId}) pada ${formTitle}`
+            );
 
             res.status(200).json({
                 success: true,
@@ -530,6 +580,15 @@ const formController = {
                 response_ids
             );
 
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'FORMULIR',
+                'DELETE',
+                `Menghapus massal (${result.affectedRows} respon) pada formulir`
+            );
+
             res.status(200).json({
                 success: true,
                 message: `${result.affectedRows} respon berhasil dihapus`
@@ -544,7 +603,20 @@ const formController = {
     deleteAllResponsesByForm: async (req, res) => {
         try {
             const { formId } = req.params;
+
+            const [forms] = await db.execute('SELECT title FROM forms WHERE id = ?', [formId]);
+            const formTitle = forms.length > 0 ? forms[0].title : `ID ${formId}`;
+
             const [result] = await db.execute('DELETE FROM form_responses WHERE form_id = ?', [formId]);
+
+            // Log Aktivitas
+            const userId = req.user ? req.user.id : null;
+            await logActivity(
+                userId,
+                'FORMULIR',
+                'DELETE',
+                `Mengosongkan seluruh respon (${result.affectedRows} data respon) pada formulir "${formTitle}"`
+            );
 
             res.status(200).json({
                 success: true,

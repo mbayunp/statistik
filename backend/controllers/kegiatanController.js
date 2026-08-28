@@ -2,6 +2,7 @@ const Kegiatan = require('../models/kegiatanModel');
 const db = require('../config/db'); // Database dengan promise pool
 const fs = require('fs');
 const path = require('path');
+const { logActivity } = require('../utils/logger');
 
 // 1. Ambil Semua Data
 exports.getAllKegiatan = async (req, res) => {
@@ -35,6 +36,15 @@ exports.create = async (req, res) => {
         // Perbaikan: Menggunakan 'await' karena db.query me-return Promise
         const [result] = await db.query(sql, [tanggal, keterangan, gambarPath]);
         
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'PUBLIKASI',
+            'CREATE',
+            `Menambahkan publikasi kegiatan baru "${keterangan || 'Tanpa Keterangan'}" (ID: ${result.insertId})`
+        );
+
         // Respon ini sekarang pasti akan terkirim ke frontend
         return res.status(201).json({ 
             success: true, 
@@ -71,6 +81,15 @@ exports.update = async (req, res) => {
 
         await db.query(sql, params);
         
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'PUBLIKASI',
+            'UPDATE',
+            `Memperbarui data publikasi kegiatan "${keterangan || 'ID ' + id}" (ID: ${id})`
+        );
+
         return res.status(200).json({ success: true, message: "Data berhasil diperbarui" });
     } catch (error) {
         console.error("Update Error:", error);
@@ -83,13 +102,14 @@ exports.delete = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const selectSql = "SELECT gambar FROM kegiatan WHERE id = ?";
+        const selectSql = "SELECT keterangan, gambar FROM kegiatan WHERE id = ?";
         const [results] = await db.query(selectSql, [id]);
 
         if (results.length === 0) {
             return res.status(404).json({ success: false, message: "Data tidak ditemukan" });
         }
 
+        const ket = results[0].keterangan || `ID ${id}`;
         const filename = results[0].gambar;
 
         const deleteSql = "DELETE FROM kegiatan WHERE id = ?";
@@ -102,6 +122,15 @@ exports.delete = async (req, res) => {
                 fs.unlinkSync(fullPath);
             }
         }
+
+        // Log Aktivitas
+        const userId = req.user ? req.user.id : null;
+        await logActivity(
+            userId,
+            'PUBLIKASI',
+            'DELETE',
+            `Menghapus data publikasi kegiatan "${ket}" (ID: ${id})`
+        );
 
         return res.json({ success: true, message: "Kegiatan berhasil dihapus" });
     } catch (error) {
