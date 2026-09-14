@@ -34,7 +34,7 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
     const requestSize = parseInt(req.headers['content-length']);
 
-    const imageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const docTypes = [...imageTypes, 'application/pdf'];
     const arsipTypes = [
         ...docTypes, 
@@ -87,12 +87,12 @@ const fileFilter = (req, file, cb) => {
             cb(new Error('Laporan wajib berformat PDF, Word (.doc/.docx), atau Excel (.xls/.xlsx)!'), false);
         }
     }
-    // 3. PENUGASAN (DOKUMENTASI)
-    else if (file.fieldname === 'dokumentasi') {
-        if (imageTypes.includes(file.mimetype)) {
+    // 3. KEGIATAN & REKAPAN (DOKUMENTASI / GAMBAR)
+    else if (file.fieldname === 'dokumentasi' || file.fieldname === 'gambar') {
+        if (imageTypes.includes(file.mimetype) || file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
-            cb(new Error('Dokumentasi wajib berformat Gambar (JPG/PNG)!'), false);
+            cb(new Error('Dokumentasi atau gambar kegiatan wajib berformat JPG, PNG, atau WEBP!'), false);
         }
     }
     // 4. SURAT MASUK / KELUAR

@@ -45,9 +45,22 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
 
   if (!isOpen) return null;
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
+      if (selectedFile.size > MAX_FILE_SIZE) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Ukuran Gambar Terlalu Besar',
+          html: `Gambar <b>${selectedFile.name}</b> berukuran <b>${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</b>.<br/><br/>Maksimal ukuran gambar adalah <b>10 MB</b>. Silakan kompres foto terlebih dahulu.`,
+          confirmButtonColor: '#009688',
+          confirmButtonText: 'Saya Mengerti'
+        });
+        e.target.value = '';
+        return;
+      }
       setFile(selectedFile);
       setPreview(URL.createObjectURL(selectedFile));
     }
@@ -59,6 +72,10 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     // 1. Validasi Input: File HANYA wajib jika ini tambah data baru (!data)
     if (!data && !file) {
       return Swal.fire("Peringatan", "Silakan pilih foto dokumentasi terlebih dahulu", "warning");
+    }
+
+    if (file && file.size > MAX_FILE_SIZE) {
+      return Swal.fire("Peringatan", `Ukuran foto (${(file.size / (1024 * 1024)).toFixed(2)} MB) melebihi batas maksimal 10 MB.`, "warning");
     }
 
     // 2. Aktifkan State Loading
@@ -181,7 +198,8 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
                 ) : (
                   <div className="text-center text-slate-400">
                     <Upload size={24} className="mx-auto mb-2" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Klik untuk Upload</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest block">Klik untuk Upload</span>
+                    <span className="text-[9px] text-slate-400 mt-1 block">Maks. 10 MB (JPG, PNG, WEBP)</span>
                   </div>
                 )}
               </label>

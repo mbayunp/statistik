@@ -73,11 +73,64 @@ app.get('/', (req, res) => {
   });
 });
 
+const multer = require('multer');
+
 app.use((err, req, res, next) => {
-  console.error("Global Error Log:", err.stack);
-  res.status(500).json({
+  console.error("Global Error Log:", err.message || err);
+
+  // 1. Tangani error dari Multer (file upload)
+  if (err instanceof multer.MulterError || err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Ukuran file terlalu besar! Maksimal ukuran gambar/file adalah 10 MB per file.'
+      });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Jumlah file terlalu banyak! Maksimal 10 file yang dapat diunggah sekaligus.'
+      });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({
+        success: false,
+        message: `Field upload tidak sesuai atau melebihi batas (${err.field || 'file'}).`
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: `Terjadi kesalahan saat mengunggah file: ${err.message}`
+    });
+  }
+
+  // 2. Tangani error custom dari fileFilter (validasi tipe / ekstensi file)
+  if (err.message && (
+    err.message.toLowerCase().includes('wajib') ||
+    err.message.toLowerCase().includes('maksimal') ||
+    err.message.toLowerCase().includes('hanya mendukung') ||
+    err.message.toLowerCase().includes('format') ||
+    err.message.toLowerCase().includes('tidak didukung') ||
+    err.message.toLowerCase().includes('ukuran')
+  )) {
+    return res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+
+  // 3. Tangani payload body parser too large
+  if (err.type === 'entity.too.large' || err.status === 413) {
+    return res.status(413).json({
+      success: false,
+      message: 'Ukuran data yang dikirim terlalu besar!'
+    });
+  }
+
+  // 4. Default error 500
+  res.status(err.status || 500).json({
     success: false,
-    message: "Terjadi kesalahan internal pada server",
+    message: err.status && err.status < 500 ? err.message : "Terjadi kesalahan internal pada server",
     error: process.env.NODE_ENV === 'development' ? err.message : {}
   });
 });

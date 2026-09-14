@@ -93,6 +93,63 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     }
   }, [data, isOpen, activeSubTab]); 
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+  const MAX_FILES_COUNT = 10; // Max 10 gambar per kegiatan
+
+  const handleFilesSelection = (incomingFiles: FileList | File[]) => {
+    const rawFiles = Array.from(incomingFiles);
+    const validFiles: File[] = [];
+    const oversizedFiles: File[] = [];
+
+    rawFiles.forEach((file) => {
+      if (file.size > MAX_FILE_SIZE) {
+        oversizedFiles.push(file);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (oversizedFiles.length > 0) {
+      const listNames = oversizedFiles
+        .map(f => `• <b>${f.name}</b> (${(f.size / (1024 * 1024)).toFixed(2)} MB)`)
+        .join('<br/>');
+
+      Swal.fire({
+        icon: 'warning',
+        title: 'Ukuran Gambar Terlalu Besar',
+        html: `
+          <div style="text-align: left; font-size: 13px; line-height: 1.6;">
+            <p style="margin-bottom: 8px; color: #334155;">Gambar berikut melebihi batas maksimal <b>10 MB</b> per file:</p>
+            <div style="background: #fef2f2; color: #dc2626; padding: 10px 14px; border-radius: 12px; margin-bottom: 12px; font-weight: 500;">
+              ${listNames}
+            </div>
+            <p style="color: #64748b;">Maksimal ukuran tiap file adalah <b>10 MB</b>. Silakan kompres gambar terlebih dahulu sebelum diunggah.</p>
+          </div>
+        `,
+        confirmButtonColor: '#009688',
+        confirmButtonText: 'Saya Mengerti'
+      });
+    }
+
+    if (validFiles.length > 0) {
+      if (validFiles.length > MAX_FILES_COUNT) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Jumlah File Terlalu Banyak',
+          text: `Maksimal hanya dapat memilih ${MAX_FILES_COUNT} gambar sekaligus.`
+        });
+        const trimmed = validFiles.slice(0, MAX_FILES_COUNT);
+        setFormData(prev => ({ ...prev, dokumentasi: trimmed }));
+        setFileStatus(`${trimmed.length} gambar dipilih`);
+      } else {
+        setFormData(prev => ({ ...prev, dokumentasi: validFiles }));
+        setFileStatus(`${validFiles.length} gambar dipilih`);
+      }
+    } else if (oversizedFiles.length > 0 && formData.dokumentasi.length === 0) {
+      setFileStatus(null);
+    }
+  };
+
   const [isDragActive, setIsDragActive] = useState(false);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -109,10 +166,8 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const filesArray = Array.from(e.dataTransfer.files);
-      setFormData({...formData, dokumentasi: filesArray});
-      setFileStatus(`${filesArray.length} gambar dipilih`);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesSelection(e.dataTransfer.files);
     }
   };
 
@@ -123,6 +178,14 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
     
     if (formData.dokumentasi.length === 0 && !data) {
       Swal.fire('Peringatan', 'Minimal 1 dokumentasi (gambar) wajib diunggah!', 'warning');
+      return;
+    }
+
+    // Validasi ulang batas ukuran sebelum dikirim ke backend
+    const oversized = formData.dokumentasi.filter(f => f.size > MAX_FILE_SIZE);
+    if (oversized.length > 0) {
+      const names = oversized.map(f => `${f.name} (${(f.size / (1024 * 1024)).toFixed(2)} MB)`).join(', ');
+      Swal.fire('Ukuran Gambar Terlalu Besar', `Gambar berikut melebihi batas 10 MB: ${names}. Silakan kompres terlebih dahulu.`, 'warning');
       return;
     }
 
@@ -172,8 +235,16 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
         const errData = await response.json().catch(() => ({}));
         handleSessionExpired(errData.message || 'Sesi login Anda telah kadaluarsa (Error 403). Silakan login kembali.');
       } else {
-        const errData = await response.json();
-        Swal.fire('Gagal', errData.message || 'Terjadi kesalahan saat menyimpan data', 'error');
+        let errorMsg = 'Terjadi kesalahan saat menyimpan data';
+        try {
+          const errData = await response.json();
+          if (errData && errData.message) {
+            errorMsg = errData.message;
+          }
+        } catch {
+          // fallback
+        }
+        Swal.fire('Gagal', errorMsg, 'error');
       }
     } catch (err) {
       console.error(err);
@@ -317,7 +388,7 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
                       <p className="mb-1 text-sm text-slate-500 font-medium">
                         <span className="font-bold text-brand-primary">Klik atau Tarik ke sini</span> untuk unggah gambar
                       </p>
-                      <p className="text-xs text-slate-400">PNG, JPG atau JPEG (Bisa pilih beberapa sekaligus)</p>
+                      <p className="text-xs text-slate-400">PNG, JPG, JPEG atau WEBP (Maksimal 10 MB per gambar)</p>
                     </>
                   )}
                 </div>
@@ -328,10 +399,9 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
                   className="hidden" 
                   accept="image/*"
                   onChange={(e) => {
-                    if (e.target.files) {
-                      const filesArray = Array.from(e.target.files);
-                      setFormData({...formData, dokumentasi: filesArray});
-                      setFileStatus(`${filesArray.length} gambar dipilih`);
+                    if (e.target.files && e.target.files.length > 0) {
+                      handleFilesSelection(e.target.files);
+                      e.target.value = '';
                     }
                   }} 
                 />
@@ -346,6 +416,10 @@ const ModalKegiatan: React.FC<ModalProps> = ({ isOpen, onClose, onRefresh, data 
                         alt="Preview" 
                         className="w-full h-full object-cover" 
                       />
+                      {/* Badge Ukuran File */}
+                      <div className="absolute bottom-1.5 left-1.5 bg-slate-900/75 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md pointer-events-none shadow-xs">
+                        {(file.size / (1024 * 1024)).toFixed(1)} MB
+                      </div>
                       <div className="absolute inset-0 bg-brand-dark/50 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
                         <button
                           type="button"
