@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
+import BackToTop from './components/BackToTop';
 import Beranda from './pages/Beranda';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -33,6 +35,8 @@ import ShortlinkList from './pages/admin/ShortlinkList';
 import ActivityLogPage from './pages/admin/ActivityLogPage';
 import { isTokenExpired, handleSessionExpired } from './utils/auth';
 import KalenderAdmin from './pages/admin/KalenderUtama';
+import AbsensiTenagaAhli from './pages/admin/AbsensiTenagaAhli';
+import PresensiTenagaAhli from './pages/PresensiTenagaAhli';
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -82,6 +86,7 @@ const PublicLayout = () => (
 const App: React.FC = () => {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* === GRUP HALAMAN PUBLIK === */}
         <Route element={<PublicLayout />}>
@@ -93,10 +98,12 @@ const App: React.FC = () => {
           <Route path="/s/:code" element={<LinkRedirect />} />
         </Route>
 
-        {/* === GRUP AUTH === */}
+        {/* === GRUP AUTH & PRESENSI MANDIRI === */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/presensi-ta" element={<PresensiTenagaAhli />} />
+        <Route path="/presensi" element={<Navigate to="/presensi-ta" replace />} />
 
         {/* === GRUP HALAMAN ADMIN === */}
         <Route 
@@ -111,6 +118,7 @@ const App: React.FC = () => {
         >
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="absensi-ta" element={<AbsensiTenagaAhli />} />
           <Route path="rekapan" element={<RekapanKegiatan />} />
           <Route path="kegiatan" element={<KegiatanPublik />} />
           <Route path="pegawai" element={<DataPegawai />} />
@@ -139,6 +147,7 @@ const App: React.FC = () => {
         {/* 404 - Page Not Found */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <BackToTop />
     </Router>
   );
 };

@@ -3,8 +3,22 @@ const { logActivity } = require('../utils/logger');
 
 exports.getAllPegawai = async (req, res) => {
     try {
-        // PERBAIKAN: Ditambahkan ORDER BY urutan ASC agar data tampil sesuai urutan yang disimpan
-        const [rows] = await db.query("SELECT * FROM pegawai ORDER BY urutan ASC, id DESC");
+        const query = `
+            SELECT 
+                id, 
+                nip, 
+                nama, 
+                jabatan, 
+                golongan, 
+                jenis_pegawai, 
+                foto_referensi, 
+                urutan, 
+                created_at, 
+                (face_descriptor IS NOT NULL AND face_descriptor != '') AS has_face
+            FROM pegawai 
+            ORDER BY urutan ASC, id DESC
+        `;
+        const [rows] = await db.query(query);
         res.json({ success: true, data: rows });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -13,9 +27,10 @@ exports.getAllPegawai = async (req, res) => {
 
 exports.createPegawai = async (req, res) => {
     try {
-        const { nip, nama, jabatan, golongan } = req.body;
-        const sql = "INSERT INTO pegawai (nip, nama, jabatan, golongan) VALUES (?, ?, ?, ?)";
-        const [result] = await db.query(sql, [nip, nama, jabatan, golongan]);
+        const { nip, nama, jabatan, golongan, jenis_pegawai } = req.body;
+        const tipePegawai = jenis_pegawai === 'tenaga_ahli' ? 'tenaga_ahli' : 'asn';
+        const sql = "INSERT INTO pegawai (nip, nama, jabatan, golongan, jenis_pegawai) VALUES (?, ?, ?, ?, ?)";
+        const [result] = await db.query(sql, [nip || null, nama, jabatan || null, golongan || null, tipePegawai]);
 
         // Log Aktivitas
         const userId = req.user ? req.user.id : null;
@@ -23,7 +38,7 @@ exports.createPegawai = async (req, res) => {
             userId,
             'PEGAWAI',
             'CREATE',
-            `Menambahkan pegawai baru "${nama}" (NIP: ${nip || '-'}, Jabatan: ${jabatan || '-'})`
+            `Menambahkan pegawai baru "${nama}" (NIP: ${nip || '-'}, Tipe: ${tipePegawai}, Jabatan: ${jabatan || '-'})`
         );
 
         res.status(201).json({ success: true, message: "Pegawai berhasil ditambahkan", id: result.insertId });
@@ -35,9 +50,10 @@ exports.createPegawai = async (req, res) => {
 exports.updatePegawai = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nip, nama, jabatan, golongan } = req.body;
-        const sql = "UPDATE pegawai SET nip=?, nama=?, jabatan=?, golongan=? WHERE id=?";
-        await db.query(sql, [nip, nama, jabatan, golongan, id]);
+        const { nip, nama, jabatan, golongan, jenis_pegawai } = req.body;
+        const tipePegawai = jenis_pegawai === 'tenaga_ahli' ? 'tenaga_ahli' : 'asn';
+        const sql = "UPDATE pegawai SET nip=?, nama=?, jabatan=?, golongan=?, jenis_pegawai=? WHERE id=?";
+        await db.query(sql, [nip || null, nama, jabatan || null, golongan || null, tipePegawai, id]);
 
         // Log Aktivitas
         const userId = req.user ? req.user.id : null;
@@ -45,7 +61,7 @@ exports.updatePegawai = async (req, res) => {
             userId,
             'PEGAWAI',
             'UPDATE',
-            `Memperbarui data pegawai "${nama}" (ID: ${id})`
+            `Memperbarui data pegawai "${nama}" (ID: ${id}, Tipe: ${tipePegawai})`
         );
 
         res.json({ success: true, message: "Data pegawai diperbarui" });

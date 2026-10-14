@@ -1,26 +1,27 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import logoIcon from '../assets/images/logo.png';
-import logoGsd from '../assets/images/logo-gsd.png'; 
+import logoGsd from '../assets/images/logo-gsd.png';
 
 const Footer: React.FC = () => {
   return (
     <footer className="bg-brand-dark text-slate-400 py-16 border-t border-white/5">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 items-start">
-          
+
           {/* Logo & Deskripsi */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-4 mb-8">
-              <img 
-                src={logoIcon} 
-                alt="Logo Kabupaten Garut" 
-                className="h-14 w-auto brightness-0 invert opacity-90" 
+              <img
+                src={logoIcon}
+                alt="Logo Kabupaten Garut"
+                className="h-14 w-auto brightness-0 invert opacity-90"
               />
               <div className="h-10 w-px bg-white/10"></div>
-              <img 
-                src={logoGsd} 
-                alt="Logo Garut Satu Data" 
-                className="h-12 w-auto brightness-0 invert opacity-90" 
+              <img
+                src={logoGsd}
+                alt="Logo Garut Satu Data"
+                className="h-12 w-auto brightness-0 invert opacity-90"
               />
             </div>
             <p className="text-sm leading-relaxed opacity-70 max-w-md">
@@ -34,7 +35,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm font-bold">
               <li>
                 <a href="https://satudata.garutkab.go.id/" target="_blank" rel="noreferrer" className="hover:text-brand-primary transition-colors flex items-center gap-2">
-                    Portal Satu Data
+                  Portal Satu Data
                 </a>
               </li>
               <li>
@@ -43,9 +44,9 @@ const Footer: React.FC = () => {
                 </a>
               </li>
               <li>
-                <a href="/#kegiatan" className="hover:text-brand-primary transition-colors">
+                <Link to="/#kegiatan" className="hover:text-brand-primary transition-colors">
                   Daftar Statistik Sektoral
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

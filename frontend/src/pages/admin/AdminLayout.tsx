@@ -26,7 +26,8 @@ import {
   X,
   History,
   Briefcase,
-  UserCheck
+  UserCheck,
+  ScanFace
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import logo from '../../assets/images/logo.png';
@@ -57,6 +58,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: 'Surat Masuk', path: '/admin/surat/masuk', icon: <Mail size={20} />},
     { name: 'Surat Keluar', path: '/admin/surat/keluar', icon: <Send size={20} /> },
     { name: 'Data Pegawai', path: '/admin/pegawai', icon: <Users size={20} /> },
+    { name: 'Absensi Tenaga Ahli', path: '/admin/absensi-ta', icon: <ScanFace size={20} /> },
     { name: 'Pembuat Formulir', path: '/admin/formulir', icon: <ListChecks size={20} /> },
     { name: 'Tautan Pendek', path: '/admin/tautan', icon: <LinkIcon size={20} /> },
     { name: 'Laporan Tenaga Ahli', path: '/admin/laporan-tenaga-ahli', icon: <FileText size={20} /> }, 
@@ -77,6 +79,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (path.startsWith('/admin/surat/masuk')) return 'Surat Masuk';
     if (path.startsWith('/admin/surat/keluar')) return 'Surat Keluar';
     if (path.startsWith('/admin/pegawai')) return 'Data Pegawai';
+    if (path.startsWith('/admin/absensi-ta')) return 'Absensi Tenaga Ahli';
     if (path.startsWith('/admin/formulir')) return 'Pembuat Formulir';
     if (path.startsWith('/admin/tautan')) return 'Tautan Pendek';
     if (path.startsWith('/admin/laporan-tenaga-ahli')) return 'Laporan Tenaga Ahli';

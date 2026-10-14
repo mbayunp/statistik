@@ -15,8 +15,8 @@ import {
   Monitor,
   RefreshCw,
   Database,
-  TrendingUp,
-  Activity
+  Activity,
+  ScanFace
 } from 'lucide-react';
 import { 
   AreaChart, Area, PieChart, Pie, Cell, RadialBarChart, RadialBar,
@@ -25,11 +25,69 @@ import {
 import { API_BASE_URL } from '../../config';
 import ActivityTimeline from '../../components/ActivityTimeline';
 
-interface SuratTrendItem {
+interface PermohonanTrendItem {
   name: string;
-  Masuk: number;
-  Keluar: number;
+  fullName: string;
+  total: number;
+  selesai: number;
+  diproses: number;
+  ditolak: number;
 }
+
+const MONTH_LIST = [
+  { short: 'Jan', full: 'Januari' },
+  { short: 'Feb', full: 'Februari' },
+  { short: 'Mar', full: 'Maret' },
+  { short: 'Apr', full: 'April' },
+  { short: 'Mei', full: 'Mei' },
+  { short: 'Jun', full: 'Juni' },
+  { short: 'Jul', full: 'Juli' },
+  { short: 'Agu', full: 'Agustus' },
+  { short: 'Sep', full: 'September' },
+  { short: 'Okt', full: 'Oktober' },
+  { short: 'Nov', full: 'November' },
+  { short: 'Des', full: 'Desember' }
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CustomPermohonanTooltip = ({ active, payload, selectedYear }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload as PermohonanTrendItem;
+    return (
+      <div className="bg-[#002B2D] p-3.5 rounded-2xl border border-white/10 shadow-2xl text-white text-xs space-y-2 min-w-[175px]">
+        <div className="flex items-center justify-between border-b border-white/10 pb-1.5 font-bold gap-2">
+          <span className="text-brand-primary font-black">{data.fullName} {selectedYear}</span>
+          <span className="text-[10px] bg-white/15 px-2 py-0.5 rounded-full text-white font-black">
+            Total: {data.total}
+          </span>
+        </div>
+        <div className="space-y-1.5 font-semibold text-[11px]">
+          <div className="flex justify-between items-center text-emerald-300">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" /> Selesai:
+            </span>
+            <span className="font-black text-white">{data.selesai}</span>
+          </div>
+          <div className="flex justify-between items-center text-amber-300">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400" /> Pengajuan / Proses:
+            </span>
+            <span className="font-black text-white">{data.diproses}</span>
+          </div>
+          {data.ditolak > 0 && (
+            <div className="flex justify-between items-center text-rose-300">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-400" /> Ditolak:
+              </span>
+              <span className="font-black text-white">{data.ditolak}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 interface AsetStatsItem {
   name: string;
@@ -43,8 +101,9 @@ interface AnggaranStatsItem {
   fill: string;
 }
 
-
 interface PermohonanItem {
+  bulan?: string;
+  tahun?: number | string;
   jumlah_selesai: number;
   jumlah_ditolak: number;
   jumlah_diproses: number;
@@ -94,9 +153,68 @@ const Dashboard: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Chart States
-  const [suratTrend, setSuratTrend] = useState<SuratTrendItem[]>([]);
+  const [permohonanTrend, setPermohonanTrend] = useState<PermohonanTrendItem[]>([]);
+  const [rawPermohonanData, setRawPermohonanData] = useState<PermohonanItem[]>([]);
+  const [selectedTahunPermohonan, setSelectedTahunPermohonan] = useState<number>(2026);
+  const [availableYears, setAvailableYears] = useState<number[]>([2026, 2025, 2024]);
   const [asetStats, setAsetStats] = useState<AsetStatsItem[]>([]);
   const [anggaranStats, setAnggaranStats] = useState<AnggaranStatsItem[]>([]);
+  const [absensiSummary, setAbsensiSummary] = useState({
+    total_ta: 0,
+    hadir: 0,
+    tepat_waktu: 0,
+    terlambat: 0,
+    dinas_luar: 0,
+    izin: 0,
+    belum_absen: 0
+  });
+
+  // Update data grafik permohonan saat data mentah atau pilihan tahun berubah
+  useEffect(() => {
+    if (!rawPermohonanData || rawPermohonanData.length === 0) {
+      // Baseline simulasi resmi dari Satu Data Garut 2026
+      setPermohonanTrend([
+        { name: 'Jan', fullName: 'Januari', total: 10, selesai: 9, diproses: 0, ditolak: 1 },
+        { name: 'Feb', fullName: 'Februari', total: 3, selesai: 3, diproses: 0, ditolak: 0 },
+        { name: 'Mar', fullName: 'Maret', total: 3, selesai: 3, diproses: 0, ditolak: 0 },
+        { name: 'Apr', fullName: 'April', total: 12, selesai: 11, diproses: 0, ditolak: 1 },
+        { name: 'Mei', fullName: 'Mei', total: 14, selesai: 12, diproses: 0, ditolak: 2 },
+        { name: 'Jun', fullName: 'Juni', total: 14, selesai: 12, diproses: 0, ditolak: 2 },
+        { name: 'Jul', fullName: 'Juli', total: 14, selesai: 14, diproses: 0, ditolak: 0 },
+        { name: 'Agu', fullName: 'Agustus', total: 4, selesai: 4, diproses: 0, ditolak: 0 },
+        { name: 'Sep', fullName: 'September', total: 4, selesai: 4, diproses: 0, ditolak: 0 },
+        { name: 'Okt', fullName: 'Oktober', total: 11, selesai: 7, diproses: 4, ditolak: 0 },
+        { name: 'Nov', fullName: 'November', total: 0, selesai: 0, diproses: 0, ditolak: 0 },
+        { name: 'Des', fullName: 'Desember', total: 0, selesai: 0, diproses: 0, ditolak: 0 },
+      ]);
+      return;
+    }
+
+    const dataForYear = rawPermohonanData.filter(d => Number(d.tahun) === selectedTahunPermohonan);
+
+    const trend = MONTH_LIST.map((m) => {
+      const match = dataForYear.find(item => 
+        String(item.bulan || '').toLowerCase().trim() === m.full.toLowerCase().trim() ||
+        String(item.bulan || '').toLowerCase().trim().startsWith(m.short.toLowerCase())
+      );
+
+      const selesai = match ? (Number(match.jumlah_selesai) || 0) : 0;
+      const diproses = match ? ((Number(match.jumlah_diproses) || 0) + (Number(match.dalam_pengajuan) || 0)) : 0;
+      const ditolak = match ? (Number(match.jumlah_ditolak) || 0) : 0;
+      const total = selesai + diproses + ditolak;
+
+      return {
+        name: m.short,
+        fullName: m.full,
+        total,
+        selesai,
+        diproses,
+        ditolak
+      };
+    });
+
+    setPermohonanTrend(trend);
+  }, [rawPermohonanData, selectedTahunPermohonan]);
   
 
 
@@ -146,7 +264,7 @@ const Dashboard: React.FC = () => {
       const kPegawai = (dataMap.keuangan_pegawai || []) as KeuanganItem[];
       const kPublikasi = (dataMap.publikasi || []) as PublikasiItem[];
 
-      // Hitung total permohonan
+      // Hitung total dan muat data permohonan
       let totalPermohonan = 0;
       try {
         const resPermohonan = await axios.get(`${API_BASE_URL}/api/satudata/request-data/total`)
@@ -154,8 +272,17 @@ const Dashboard: React.FC = () => {
           .catch(() => axios.get('https://satudata-api.garutkab.go.id/api/request-data/total'));
         const dataPermohonan = (resPermohonan.data?.data || []) as PermohonanItem[];
         totalPermohonan = dataPermohonan.reduce((sum: number, item: PermohonanItem) => {
-          return sum + (item.jumlah_selesai + item.jumlah_ditolak + item.jumlah_diproses + item.dalam_pengajuan);
+          return sum + (Number(item.jumlah_selesai || 0) + Number(item.jumlah_ditolak || 0) + Number(item.jumlah_diproses || 0) + Number(item.dalam_pengajuan || 0));
         }, 0);
+
+        if (dataPermohonan.length > 0) {
+          setRawPermohonanData(dataPermohonan);
+          const years = Array.from(new Set(dataPermohonan.map(p => Number(p.tahun)).filter(Boolean))).sort((a, b) => b - a);
+          if (years.length > 0) {
+            setAvailableYears(years);
+            setSelectedTahunPermohonan(prev => years.includes(prev) ? prev : years[0]);
+          }
+        }
       } catch (error) {
         console.error("Gagal mengambil data Rekapan Permohonan Eksternal", error);
       }
@@ -173,38 +300,6 @@ const Dashboard: React.FC = () => {
         keuangan: kAnggaran.length + kModal.length + kPegawai.length,
         rekapanPermohonan: totalPermohonan
       });
-
-      // 1. Hitung Tren Surat Masuk vs Keluar bulanan
-      const monthsName = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-      const monthlyTrend = monthsName.map((name, index) => {
-        const countMasuk = sMasuk.filter(s => {
-          const d = new Date(s.tanggal_surat || s.tanggal_terima || '');
-          return d.getMonth() === index && d.getFullYear() === 2026;
-        }).length;
-
-        const countKeluar = sKeluar.filter(s => {
-          const d = new Date(s.tanggal_surat || '');
-          return d.getMonth() === index && d.getFullYear() === 2026;
-        }).length;
-
-        return { name, Masuk: countMasuk, Keluar: countKeluar };
-      });
-
-      // Fallback baseline jika database kosong
-      const hasTrendData = monthlyTrend.some(m => m.Masuk > 0 || m.Keluar > 0);
-      if (!hasTrendData) {
-        // Data tren simulasi default 2026
-        setSuratTrend([
-          { name: 'Jan', Masuk: 4, Keluar: 2 },
-          { name: 'Feb', Masuk: 8, Keluar: 5 },
-          { name: 'Mar', Masuk: 12, Keluar: 9 },
-          { name: 'Apr', Masuk: 7, Keluar: 11 },
-          { name: 'Mei', Masuk: sMasuk.length || 9, Keluar: sKeluar.length || 6 },
-          { name: 'Jun', Masuk: 0, Keluar: 0 },
-        ]);
-      } else {
-        setSuratTrend(monthlyTrend.slice(0, 6)); // Tampilkan semester 1
-      }
 
       // 2. Hitung statistik Aset (Pie Chart)
       let baik = 0, kurangBaik = 0, rusak = 0;
@@ -251,6 +346,31 @@ const Dashboard: React.FC = () => {
         ]);
       }
 
+      // 4. Hitung Ringkasan Presensi Tenaga Ahli Hari Ini
+      try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const resAbsensi = await axios.get(`${API_BASE_URL}/api/absensi/rekap`, { headers })
+          .catch(() => axios.get(`${API_BASE_URL}/api/absensi/tenaga-ahli`));
+
+        if (resAbsensi.data?.summary) {
+          setAbsensiSummary(resAbsensi.data.summary);
+        } else if (resAbsensi.data?.data && Array.isArray(resAbsensi.data.data)) {
+          const list = resAbsensi.data.data;
+          const hadir = list.filter((r: { is_checked_in?: boolean | number; jam_masuk?: string | null }) => r.is_checked_in || r.jam_masuk).length;
+          setAbsensiSummary({
+            total_ta: list.length,
+            hadir,
+            tepat_waktu: list.filter((r: { status_kehadiran?: string }) => r.status_kehadiran === 'Tepat Waktu').length,
+            terlambat: list.filter((r: { status_kehadiran?: string }) => r.status_kehadiran === 'Terlambat').length,
+            dinas_luar: list.filter((r: { kategori_kerja?: string }) => r.kategori_kerja === 'Dinas Luar').length,
+            izin: list.filter((r: { kategori_kerja?: string }) => r.kategori_kerja === 'Izin/Sakit').length,
+            belum_absen: Math.max(0, list.length - hadir)
+          });
+        }
+      } catch (err) {
+        console.error("Gagal memuat rekap absensi di dashboard:", err);
+      }
 
     } catch (err) {
       console.error("Gagal mengambil data dashboard secara keseluruhan", err);
@@ -354,59 +474,72 @@ const Dashboard: React.FC = () => {
         
         {/* LEFT COLUMN: GRAPHICS */}
         <div className="lg:col-span-8 space-y-6 lg:space-y-8">
-          
-          {/* Main Chart: Volume Surat */}
+                   {/* Main Chart: Tren Permohonan Data Bulanan */}
           <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/70 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
               <div>
                 <h3 className="text-base sm:text-lg font-black text-brand-dark flex items-center gap-2">
-                  <TrendingUp className="text-brand-primary" size={18} /> Tren Surat Masuk & Keluar
+                  <Database className="text-brand-primary" size={20} /> Tren Permohonan Data Bulanan
                 </h3>
-                <p className="text-xs text-slate-400 font-medium">Perbandingan volume persuratan per bulan (2026)</p>
+                <p className="text-xs text-slate-400 font-medium">
+                  Statistik permohonan data dari bulan ke bulan (Garut Satu Data)
+                </p>
               </div>
-              <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider self-start sm:self-auto">
-                <div className="flex items-center gap-1.5 text-emerald-600">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" /> Surat Masuk
+
+              <div className="flex items-center gap-3 flex-wrap self-start sm:self-auto">
+                {/* Legend */}
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5 text-emerald-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-brand-primary" /> Total Permohonan
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sky-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-brand-secondary" /> Selesai
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-sky-600">
-                  <span className="w-2.5 h-2.5 rounded-full bg-sky-400" /> Surat Keluar
-                </div>
+
+                {/* Filter Tahun */}
+                {availableYears.length > 0 && (
+                  <div className="bg-slate-50 hover:bg-slate-100 transition-colors px-2.5 py-1 rounded-xl border border-slate-200">
+                    <select
+                      value={selectedTahunPermohonan}
+                      onChange={(e) => setSelectedTahunPermohonan(Number(e.target.value))}
+                      className="bg-transparent border-none outline-hidden text-xs font-bold text-slate-700 cursor-pointer"
+                      title="Pilih Tahun Permohonan Data"
+                    >
+                      {availableYears.map(yr => (
+                        <option key={yr} value={yr}>Tahun {yr}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
+
             <div className="h-52 sm:h-64 md:h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={suratTrend} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <AreaChart data={permohonanTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="colorTotalPermohonan" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#00D2B4" stopOpacity={0.4}/>
                       <stop offset="95%" stopColor="#00D2B4" stopOpacity={0.0}/>
                     </linearGradient>
-                    <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="colorSelesaiPermohonan" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#00A3FF" stopOpacity={0.4}/>
                       <stop offset="95%" stopColor="#00A3FF" stopOpacity={0.0}/>
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} fontWeight="bold" />
-                  <YAxis stroke="#94a3b8" fontSize={11} fontWeight="bold" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#002B2D', 
-                      borderRadius: '14px', 
-                      border: 'none',
-                      color: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: 'bold'
-                    }} 
-                  />
-                  <Area type="monotone" dataKey="Masuk" stroke="#00D2B4" strokeWidth={3} fillOpacity={1} fill="url(#colorMasuk)" />
-                  <Area type="monotone" dataKey="Keluar" stroke="#00A3FF" strokeWidth={3} fillOpacity={1} fill="url(#colorKeluar)" />
+                  <YAxis stroke="#94a3b8" fontSize={11} fontWeight="bold" allowDecimals={false} />
+                  <Tooltip content={<CustomPermohonanTooltip selectedYear={selectedTahunPermohonan} />} />
+                  <Area type="monotone" dataKey="total" name="Total Permohonan" stroke="#00D2B4" strokeWidth={3} fillOpacity={1} fill="url(#colorTotalPermohonan)" />
+                  <Area type="monotone" dataKey="selesai" name="Selesai" stroke="#00A3FF" strokeWidth={3} fillOpacity={1} fill="url(#colorSelesaiPermohonan)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Sub Charts: Realisasi Anggaran & Kondisi Aset */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+          {/* Sub Charts: Realisasi Anggaran, Kondisi Aset, & Kehadiran Tenaga Ahli */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             
             {/* Anggaran Radial Bar */}
             <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/70 shadow-xs flex flex-col justify-between">
@@ -437,7 +570,7 @@ const Dashboard: React.FC = () => {
             <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/70 shadow-xs flex flex-col justify-between">
               <div>
                 <h4 className="text-sm sm:text-base font-black text-brand-dark mb-1">Kondisi Aset Bidang</h4>
-                <p className="text-xs text-slate-400 mb-4 font-medium">Rasio kelayakan barang dan perangkat</p>
+                <p className="text-xs text-slate-400 mb-4 font-medium">Rasio kelayakan barang</p>
               </div>
               <div className="h-40 sm:h-44 flex items-center justify-center gap-3">
                 <div className="w-1/2 h-full">
@@ -468,6 +601,83 @@ const Dashboard: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Kehadiran Tenaga Ahli Hari Ini Widget */}
+            <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/70 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-sm sm:text-base font-black text-brand-dark flex items-center gap-2">
+                    <ScanFace size={18} className="text-brand-primary" /> Kehadiran Tenaga Ahli
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-400 mb-4 font-medium">Presensi biometrik & geofence real-time</p>
+              </div>
+
+              {/* Progress & Ratio */}
+              <div className="space-y-3">
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-brand-dark">
+                      {absensiSummary.hadir}
+                    </span>
+                    <span className="text-xs font-bold text-slate-400"> / {absensiSummary.total_ta} Hadir</span>
+                  </div>
+                  <span className="text-xs font-black px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                    {absensiSummary.total_ta > 0 ? Math.round((absensiSummary.hadir / absensiSummary.total_ta) * 100) : 0}%
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden flex">
+                  <div 
+                    style={{ width: `${absensiSummary.total_ta > 0 ? (absensiSummary.tepat_waktu / absensiSummary.total_ta) * 100 : 0}%` }} 
+                    className="bg-emerald-500 h-full transition-all duration-500"
+                    title={`Tepat Waktu: ${absensiSummary.tepat_waktu}`}
+                  />
+                  <div 
+                    style={{ width: `${absensiSummary.total_ta > 0 ? (absensiSummary.terlambat / absensiSummary.total_ta) * 100 : 0}%` }} 
+                    className="bg-amber-400 h-full transition-all duration-500"
+                    title={`Terlambat: ${absensiSummary.terlambat}`}
+                  />
+                  <div 
+                    style={{ width: `${absensiSummary.total_ta > 0 ? (absensiSummary.dinas_luar / absensiSummary.total_ta) * 100 : 0}%` }} 
+                    className="bg-sky-400 h-full transition-all duration-500"
+                    title={`Dinas Luar: ${absensiSummary.dinas_luar}`}
+                  />
+                </div>
+
+                {/* Sub Badges */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-slate-500 pt-1">
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700">
+                    Tepat: {absensiSummary.tepat_waktu}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700">
+                    Telat: {absensiSummary.terlambat}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700">
+                    Belum: {absensiSummary.belum_absen}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Shortcut Buttons */}
+              <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-100 mt-4">
+                <button
+                  onClick={() => navigate('/admin/absensi-ta')}
+                  className="py-2.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] uppercase tracking-wider text-center transition-all cursor-pointer"
+                >
+                  Kelola Rekap
+                </button>
+                <a
+                  href="/presensi-ta"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2.5 px-2 rounded-xl bg-brand-dark hover:bg-brand-primary text-white font-bold text-[11px] uppercase tracking-wider text-center transition-all flex items-center justify-center gap-1 cursor-pointer shadow-sm"
+                >
+                  Kiosk Absen <ArrowUpRight size={12} />
+                </a>
               </div>
             </div>
 

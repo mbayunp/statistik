@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { UserPlus, Edit, Trash2, Users, Search, GripVertical, Inbox } from 'lucide-react';
+import { UserPlus, Edit, Trash2, Users, Search, GripVertical, Inbox, ShieldCheck, Sparkles } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
 interface Pegawai {
@@ -11,6 +11,9 @@ interface Pegawai {
   jabatan?: string;
   golongan?: string;
   urutan?: number;
+  jenis_pegawai?: 'asn' | 'tenaga_ahli';
+  foto_referensi?: string | null;
+  has_face?: boolean | number;
 }
 
 const DataPegawai: React.FC = () => {
@@ -21,7 +24,13 @@ const DataPegawai: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [currentId, setCurrentId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ nip: '', nama: '', jabatan: '', golongan: '' });
+  const [formData, setFormData] = useState<{
+    nip: string;
+    nama: string;
+    jabatan: string;
+    golongan: string;
+    jenis_pegawai: 'asn' | 'tenaga_ahli';
+  }>({ nip: '', nama: '', jabatan: '', golongan: '', jenis_pegawai: 'asn' });
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
@@ -51,7 +60,7 @@ const DataPegawai: React.FC = () => {
         Swal.fire('Berhasil', 'Pegawai ditambahkan', 'success');
       }
       setShowModal(false);
-      setFormData({ nip: '', nama: '', jabatan: '', golongan: '' });
+      setFormData({ nip: '', nama: '', jabatan: '', golongan: '', jenis_pegawai: 'asn' });
       fetchPegawai();
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
@@ -62,7 +71,13 @@ const DataPegawai: React.FC = () => {
   const handleEdit = (p: Pegawai) => {
     setEditMode(true);
     setCurrentId(p.id);
-    setFormData({ nip: p.nip || '', nama: p.nama, jabatan: p.jabatan || '', golongan: p.golongan || '' });
+    setFormData({ 
+      nip: p.nip || '', 
+      nama: p.nama, 
+      jabatan: p.jabatan || '', 
+      golongan: p.golongan || '',
+      jenis_pegawai: p.jenis_pegawai || 'asn'
+    });
     setShowModal(true);
   };
 
@@ -138,7 +153,7 @@ const DataPegawai: React.FC = () => {
           </div>
           
           <button 
-            onClick={() => { setEditMode(false); setFormData({nip:'', nama:'', jabatan:'', golongan:''}); setShowModal(true); }}
+            onClick={() => { setEditMode(false); setFormData({nip:'', nama:'', jabatan:'', golongan:'', jenis_pegawai: 'asn'}); setShowModal(true); }}
             className="bg-brand-dark text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-brand-primary transition-all shadow-xl hover-lift active-shrink cursor-pointer"
           >
             <UserPlus size={20} /> Tambah Pegawai
@@ -169,6 +184,7 @@ const DataPegawai: React.FC = () => {
                   <th className="p-6">NIP</th>
                   <th className="p-6">Nama Pegawai</th>
                   <th className="p-6">Jabatan</th>
+                  <th className="p-6 text-center">Tipe</th>
                   <th className="p-6 text-center">Gol</th>
                   <th className="p-6 text-center">Aksi</th>
                 </tr>
@@ -181,6 +197,7 @@ const DataPegawai: React.FC = () => {
                        <td className="p-6"><div className="w-24 h-4 bg-slate-100 rounded-md" /></td>
                        <td className="p-6"><div className="w-40 h-4 bg-slate-100 rounded-md" /></td>
                        <td className="p-6"><div className="w-32 h-4 bg-slate-100 rounded-md" /></td>
+                       <td className="p-6 text-center"><div className="w-20 h-6 bg-slate-100 rounded-lg mx-auto" /></td>
                        <td className="p-6 text-center"><div className="w-10 h-6 bg-slate-100 rounded-lg mx-auto" /></td>
                        <td className="p-6"><div className="w-16 h-8 bg-slate-100 rounded-xl mx-auto" /></td>
                      </tr>
@@ -211,13 +228,28 @@ const DataPegawai: React.FC = () => {
 
                     {/* KOLOM DATA */}
                     <td className="p-6 font-mono text-xs text-slate-500 font-bold select-text">{p.nip || '-'}</td>
-                    <td className="p-6 font-bold text-slate-800 text-sm select-text">{p.nama}</td>
+                    <td className="p-6 font-bold text-slate-800 text-sm select-text">
+                      <div className="flex items-center gap-2">
+                        <span>{p.nama}</span>
+                      </div>
+                    </td>
                     <td className="p-6 text-sm font-medium text-slate-600 select-text">{p.jabatan || '-'}</td>
+                    <td className="p-6 text-center">
+                      {p.jenis_pegawai === 'tenaga_ahli' ? (
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                          <Sparkles size={11} className="text-emerald-500" /> Tenaga Ahli
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                          <ShieldCheck size={11} className="text-slate-500" /> ASN / PNS
+                        </span>
+                      )}
+                    </td>
                     <td className="p-6 text-center"><span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider">{p.golongan || '-'}</span></td>
                     <td className="p-6">
                       <div className="flex justify-center gap-2">
-                        <button onClick={() => handleEdit(p)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all"><Edit size={18} /></button>
-                        <button onClick={() => handleDelete(p.id)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"><Trash2 size={18} /></button>
+                        <button onClick={() => handleEdit(p)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all cursor-pointer"><Edit size={18} /></button>
+                        <button onClick={() => handleDelete(p.id)} className="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all cursor-pointer"><Trash2 size={18} /></button>
                       </div>
                     </td>
                   </tr>
@@ -264,9 +296,20 @@ const DataPegawai: React.FC = () => {
                         <h4 className="font-bold text-slate-800 text-sm select-text">{p.nama}</h4>
                       </div>
                     </div>
-                    <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">
-                      Gol: {p.golongan || '-'}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {p.jenis_pegawai === 'tenaga_ahli' ? (
+                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider inline-flex items-center gap-1">
+                          <Sparkles size={10} className="text-emerald-500" /> TA
+                        </span>
+                      ) : (
+                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider">
+                          ASN
+                        </span>
+                      )}
+                      <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">
+                        Gol: {p.golongan || '-'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -307,7 +350,7 @@ const DataPegawai: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL FORM TETAP SAMA */}
+      {/* MODAL FORM */}
       {showModal && (
         <div className="fixed inset-0 z-150 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 text-left overflow-y-auto">
           <div className="bg-white w-full max-w-lg rounded-2xl sm:rounded-[2.5rem] shadow-2xl animate-in zoom-in duration-300 overflow-hidden my-auto">
@@ -315,14 +358,43 @@ const DataPegawai: React.FC = () => {
               <h2 className="text-lg sm:text-xl font-black text-slate-800 uppercase tracking-tight">
                 {editMode ? 'Edit Data Pegawai' : 'Tambah Pegawai Baru'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl">✕</button>
+              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl cursor-pointer">✕</button>
             </div>
             <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Kategori Pegawai</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, jenis_pegawai: 'asn' })}
+                      className={`py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                        formData.jenis_pegawai === 'asn'
+                          ? 'bg-brand-dark text-white border-brand-dark shadow-sm'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <ShieldCheck size={16} /> ASN / PNS
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, jenis_pegawai: 'tenaga_ahli' })}
+                      className={`py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                        formData.jenis_pegawai === 'tenaga_ahli'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Sparkles size={16} /> Tenaga Ahli
+                    </button>
+                  </div>
+                </div>
+
+                <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">NIP (Opsional)</label>
                   <input 
                     type="text" className="w-full px-4 py-3 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
+                    placeholder="Contoh: 19850101..."
                     value={formData.nip} onChange={(e) => setFormData({...formData, nip: e.target.value})}
                   />
                 </div>
@@ -330,6 +402,7 @@ const DataPegawai: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nama Lengkap</label>
                   <input 
                     required type="text" className="w-full px-4 py-3 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
+                    placeholder="Nama beserta gelar..."
                     value={formData.nama} onChange={(e) => setFormData({...formData, nama: e.target.value})}
                   />
                 </div>
@@ -338,13 +411,14 @@ const DataPegawai: React.FC = () => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Jabatan</label>
                     <input 
                       type="text" className="w-full px-4 py-3 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
+                      placeholder="Contoh: Programmer / Analis..."
                       value={formData.jabatan} onChange={(e) => setFormData({...formData, jabatan: e.target.value})}
                     />
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Golongan</label>
                     <input 
-                      type="text" placeholder="Contoh: IV/a" className="w-full px-4 py-3 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
+                      type="text" placeholder="Contoh: IV/a atau -" className="w-full px-4 py-3 bg-slate-100 rounded-xl border-none outline-none focus:ring-2 ring-brand-primary transition-all font-bold text-sm text-slate-700"
                       value={formData.golongan} onChange={(e) => setFormData({...formData, golongan: e.target.value})}
                     />
                   </div>

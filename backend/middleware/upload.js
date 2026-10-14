@@ -7,9 +7,11 @@ const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         let destFolder = './uploads/';
 
-        // Dinamis: Arahkan file laporan ke subfolder /laporan/
+        // Dinamis: Arahkan file laporan ke subfolder /laporan/, absensi ke /absensi/
         if (file.fieldname === 'file_laporan') {
             destFolder = './uploads/laporan/';
+        } else if (file.fieldname === 'foto_referensi' || file.fieldname === 'foto_masuk' || file.fieldname === 'foto_pulang' || file.fieldname === 'foto') {
+            destFolder = './uploads/absensi/';
         }
 
         // Auto-create folder jika belum ada agar tidak error saat deploy
@@ -26,6 +28,10 @@ const storage = multer.diskStorage({
             prefix = 'laporan-';
         } else if (file.fieldname === 'file_attachment' || file.fieldname === 'file_form') {
             prefix = 'form-';
+        } else if (file.fieldname === 'foto_referensi') {
+            prefix = 'ref-face-';
+        } else if (file.fieldname === 'foto_masuk' || file.fieldname === 'foto_pulang' || file.fieldname === 'foto') {
+            prefix = 'absensi-';
         }
         cb(null, prefix + uniqueSuffix + path.extname(file.originalname)); 
     }
@@ -87,12 +93,12 @@ const fileFilter = (req, file, cb) => {
             cb(new Error('Laporan wajib berformat PDF, Word (.doc/.docx), atau Excel (.xls/.xlsx)!'), false);
         }
     }
-    // 3. KEGIATAN & REKAPAN (DOKUMENTASI / GAMBAR)
-    else if (file.fieldname === 'dokumentasi' || file.fieldname === 'gambar') {
+    // 3. KEGIATAN & REKAPAN (DOKUMENTASI / GAMBAR) & ABSENSI
+    else if (file.fieldname === 'dokumentasi' || file.fieldname === 'gambar' || file.fieldname === 'foto_referensi' || file.fieldname === 'foto_masuk' || file.fieldname === 'foto_pulang' || file.fieldname === 'foto') {
         if (imageTypes.includes(file.mimetype) || file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
-            cb(new Error('Dokumentasi atau gambar kegiatan wajib berformat JPG, PNG, atau WEBP!'), false);
+            cb(new Error('Foto absensi, referensi wajah, atau dokumentasi wajib berformat JPG, JPEG, PNG, atau WEBP!'), false);
         }
     }
     // 4. SURAT MASUK / KELUAR
