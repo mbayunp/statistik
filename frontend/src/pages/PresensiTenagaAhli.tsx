@@ -1,34 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { 
-  ScanFace, 
-  MapPin, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  RefreshCw, 
-  LogIn, 
-  LogOut, 
-  Briefcase, 
-  FileText, 
-  ShieldCheck, 
-  Camera, 
-  Building2, 
-  Compass, 
+import {
+  ScanFace,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  LogIn,
+  LogOut,
+  Camera,
+  Building2,
   Sparkles,
   ArrowLeft,
-  ChevronDown,
-  Navigation
+  ChevronDown
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
-import { 
-  loadFaceApiModels, 
-  extractFaceDescriptor, 
-  calculateEuclideanDistance, 
+import {
+  loadFaceApiModels,
+  extractFaceDescriptor,
+  calculateEuclideanDistance,
   calculateSimilarityPercent,
   findBestMatchingTenagaAhli,
-  faceapi
+  faceapi,
+  type TenagaAhliDescriptorItem
 } from '../utils/faceApi';
 
 interface PengaturanAbsensi {
@@ -41,13 +37,9 @@ interface PengaturanAbsensi {
   jam_pulang: string;
 }
 
-interface TenagaAhliItem {
-  id: number;
-  nama: string;
+interface TenagaAhliItem extends TenagaAhliDescriptorItem {
   nip?: string;
-  jabatan?: string;
   foto_referensi?: string | null;
-  face_descriptor?: number[] | null;
   has_face?: boolean | number;
   jam_masuk?: string | null;
   jam_pulang?: string | null;
@@ -70,8 +62,8 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
 
   const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-            Math.cos(phi1) * Math.cos(phi2) *
-            Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+    Math.cos(phi1) * Math.cos(phi2) *
+    Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return Math.round(R * c);
@@ -241,6 +233,7 @@ const PresensiTenagaAhli: React.FC = () => {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 5. Face Detection & Matching Loop
@@ -277,25 +270,30 @@ const PresensiTenagaAhli: React.FC = () => {
 
         if (selectedPegawaiId) {
           const target = tenagaAhliList.find(t => t.id === selectedPegawaiId);
-          if (target && target.face_descriptor && Array.isArray(target.face_descriptor)) {
-            const dist = calculateEuclideanDistance(result.rawDescriptor, target.face_descriptor);
-            const sim = calculateSimilarityPercent(dist);
-            score = sim;
-            if (dist <= 0.48) {
-              currentMatch = target;
+          if (target && target.face_descriptor) {
+            let desc: number[] | null = null;
+            if (Array.isArray(target.face_descriptor)) {
+              desc = target.face_descriptor;
+            } else if (typeof target.face_descriptor === 'string') {
+              try { desc = JSON.parse(target.face_descriptor); } catch { desc = null; }
+            }
+            if (desc && Array.isArray(desc)) {
+              const dist = calculateEuclideanDistance(result.rawDescriptor, desc);
+              const sim = calculateSimilarityPercent(dist);
+              score = sim;
+              if (dist <= 0.48) {
+                currentMatch = target;
+              }
             }
           }
         } else {
           // 1:N match
           const best = findBestMatchingTenagaAhli(result.rawDescriptor, tenagaAhliList, 0.48);
           if (best) {
-            const found = tenagaAhliList.find(t => t.id === best.item.id);
-            if (found) {
-              currentMatch = found;
-              score = best.similarity;
-              // Auto-select pegawai if not manually selected
-              setSelectedPegawaiId(found.id);
-            }
+            currentMatch = best.item;
+            score = best.similarity;
+            // Auto-select pegawai if not manually selected
+            setSelectedPegawaiId(best.item.id);
           }
         }
 
@@ -516,20 +514,19 @@ const PresensiTenagaAhli: React.FC = () => {
                 <div className="flex items-center gap-2 truncate">
                   <MapPin size={16} className={isOutOfRadius ? 'text-amber-400 shrink-0' : 'text-emerald-400 shrink-0'} />
                   <span className="truncate">
-                    {gpsLoading 
-                      ? 'Mencari sinyal GPS...' 
-                      : userDistance != null 
-                      ? `${userDistance} meter dari ${pengaturan.nama_lokasi}` 
-                      : gpsError || 'GPS tidak tersedia'}
+                    {gpsLoading
+                      ? 'Mencari sinyal GPS...'
+                      : userDistance != null
+                        ? `${userDistance} meter dari ${pengaturan.nama_lokasi}`
+                        : gpsError || 'GPS tidak tersedia'}
                   </span>
                 </div>
                 <div>
                   {userDistance != null && (
-                    <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider shrink-0 ${
-                      !isOutOfRadius 
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                    }`}>
+                    <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider shrink-0 ${!isOutOfRadius
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      }`}>
                       {!isOutOfRadius ? 'Dalam Radius' : 'Luar Radius'}
                     </span>
                   )}
@@ -583,10 +580,10 @@ const PresensiTenagaAhli: React.FC = () => {
               <div className="mt-3 p-3 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-800 shrink-0 border border-white/10">
                   {selectedPegawai.foto_referensi ? (
-                    <img 
-                      src={`${API_BASE_URL}${selectedPegawai.foto_referensi}`} 
-                      alt={selectedPegawai.nama} 
-                      className="w-full h-full object-cover" 
+                    <img
+                      src={`${API_BASE_URL}${selectedPegawai.foto_referensi}`}
+                      alt={selectedPegawai.nama}
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-500">
@@ -653,33 +650,30 @@ const PresensiTenagaAhli: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setKategoriKerja('WFO')}
-                className={`py-3 px-2 rounded-xl font-bold text-xs uppercase tracking-wider border transition-all cursor-pointer ${
-                  kategoriKerja === 'WFO'
-                    ? 'bg-brand-primary text-brand-dark border-brand-primary shadow-lg shadow-brand-primary/20 font-black'
-                    : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-                }`}
+                className={`py-3 px-2 rounded-xl font-bold text-xs uppercase tracking-wider border transition-all cursor-pointer ${kategoriKerja === 'WFO'
+                  ? 'bg-brand-primary text-brand-dark border-brand-primary shadow-lg shadow-brand-primary/20 font-black'
+                  : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                  }`}
               >
                 WFO
               </button>
               <button
                 type="button"
                 onClick={() => setKategoriKerja('Dinas Luar')}
-                className={`py-3 px-2 rounded-xl font-bold text-xs uppercase tracking-wider border transition-all cursor-pointer ${
-                  kategoriKerja === 'Dinas Luar'
-                    ? 'bg-brand-secondary text-brand-dark border-brand-secondary shadow-lg shadow-brand-secondary/20 font-black'
-                    : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-                }`}
+                className={`py-3 px-2 rounded-xl font-bold text-xs uppercase tracking-wider border transition-all cursor-pointer ${kategoriKerja === 'Dinas Luar'
+                  ? 'bg-brand-secondary text-brand-dark border-brand-secondary shadow-lg shadow-brand-secondary/20 font-black'
+                  : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                  }`}
               >
                 Dinas Luar
               </button>
               <button
                 type="button"
                 onClick={() => setKategoriKerja('Izin/Sakit')}
-                className={`py-3 px-2 rounded-xl font-bold text-xs uppercase tracking-wider border transition-all cursor-pointer ${
-                  kategoriKerja === 'Izin/Sakit'
-                    ? 'bg-amber-400 text-slate-900 border-amber-400 shadow-lg shadow-amber-400/20 font-black'
-                    : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-                }`}
+                className={`py-3 px-2 rounded-xl font-bold text-xs uppercase tracking-wider border transition-all cursor-pointer ${kategoriKerja === 'Izin/Sakit'
+                  ? 'bg-amber-400 text-slate-900 border-amber-400 shadow-lg shadow-amber-400/20 font-black'
+                  : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                  }`}
               >
                 Izin / Sakit
               </button>
@@ -696,11 +690,11 @@ const PresensiTenagaAhli: React.FC = () => {
               value={keterangan}
               onChange={(e) => setKeterangan(e.target.value)}
               placeholder={
-                kategoriKerja === 'WFO' 
-                  ? 'Catatan kegiatan kerja hari ini (opsional)...' 
+                kategoriKerja === 'WFO'
+                  ? 'Catatan kegiatan kerja hari ini (opsional)...'
                   : kategoriKerja === 'Dinas Luar'
-                  ? 'Lokasi penugasan lapangan & uraian kegiatan...'
-                  : 'Alasan izin atau sakit...'
+                    ? 'Lokasi penugasan lapangan & uraian kegiatan...'
+                    : 'Alasan izin atau sakit...'
               }
               className="w-full bg-slate-900 border border-white/20 rounded-xl p-3 text-xs font-medium text-white placeholder:text-slate-500 outline-none focus:ring-2 ring-brand-primary"
             />
@@ -722,11 +716,10 @@ const PresensiTenagaAhli: React.FC = () => {
               type="button"
               disabled={submitting || !selectedPegawaiId || isWfoBlocked}
               onClick={() => handleSubmitPresensi('masuk')}
-              className={`py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer ${
-                !submitting && selectedPegawaiId && !isWfoBlocked
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-emerald-500/20 active:scale-98'
-                  : 'bg-white/10 text-slate-500 cursor-not-allowed shadow-none'
-              }`}
+              className={`py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer ${!submitting && selectedPegawaiId && !isWfoBlocked
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-emerald-500/20 active:scale-98'
+                : 'bg-white/10 text-slate-500 cursor-not-allowed shadow-none'
+                }`}
             >
               <LogIn size={18} /> {submitting ? 'Memproses...' : 'Check-In Masuk'}
             </button>
@@ -735,11 +728,10 @@ const PresensiTenagaAhli: React.FC = () => {
               type="button"
               disabled={submitting || !selectedPegawaiId || !selectedPegawai?.is_checked_in}
               onClick={() => handleSubmitPresensi('pulang')}
-              className={`py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer ${
-                !submitting && selectedPegawaiId && selectedPegawai?.is_checked_in
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/20 active:scale-98'
-                  : 'bg-white/10 text-slate-500 cursor-not-allowed shadow-none'
-              }`}
+              className={`py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer ${!submitting && selectedPegawaiId && selectedPegawai?.is_checked_in
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/20 active:scale-98'
+                : 'bg-white/10 text-slate-500 cursor-not-allowed shadow-none'
+                }`}
             >
               <LogOut size={18} /> {submitting ? 'Memproses...' : 'Check-Out Pulang'}
             </button>

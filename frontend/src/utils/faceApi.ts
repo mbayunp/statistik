@@ -111,16 +111,16 @@ export interface TenagaAhliDescriptorItem {
   id: number;
   nama: string;
   jabatan?: string;
-  face_descriptor: number[] | string | null;
+  face_descriptor?: number[] | string | null;
 }
 
-export function findBestMatchingTenagaAhli(
+export function findBestMatchingTenagaAhli<T extends TenagaAhliDescriptorItem>(
   queryDescriptor: Float32Array | number[],
-  tenagaAhliList: TenagaAhliDescriptorItem[],
+  tenagaAhliList: T[],
   threshold = 0.50
 ) {
   let bestMatch: {
-    item: TenagaAhliDescriptorItem;
+    item: T;
     distance: number;
     similarity: number;
   } | null = null;

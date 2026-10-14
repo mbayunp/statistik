@@ -9,7 +9,6 @@ import {
   MapPin, 
   Settings, 
   Search, 
-  Download, 
   Camera, 
   CheckCircle2, 
   AlertCircle, 
@@ -21,8 +20,6 @@ import {
   Navigation, 
   ShieldCheck, 
   Users, 
-  UserCheck, 
-  Briefcase, 
   FileSpreadsheet,
   MapPinned
 } from 'lucide-react';
