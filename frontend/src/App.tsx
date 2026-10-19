@@ -12,6 +12,7 @@ import Tentang from './pages/Tentang';
 import Kegiatan from './pages/Kegiatan';
 import PublicForm from './pages/PublicForm';
 import LinkRedirect from './pages/LinkRedirect';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 import Dashboard from './pages/admin/Dashboard';
 import RekapanKegiatan from './pages/admin/RekapanKegiatan';
@@ -96,6 +97,7 @@ const App: React.FC = () => {
           <Route path="/kontak" element={<Kontak />} />
           <Route path="/form/:slug" element={<PublicForm />} />
           <Route path="/s/:code" element={<LinkRedirect />} />
+          <Route path="/kebijakan-privasi" element={<PrivacyPolicy />} />
         </Route>
 
         {/* === GRUP AUTH & PRESENSI MANDIRI === */}

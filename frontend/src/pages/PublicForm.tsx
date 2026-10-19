@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import {
   Loader2, CheckCircle2, AlertCircle, Camera, Compass, UploadCloud, PenTool,
   Star, MapPin, Mail, Phone, Link as LinkIcon, Calendar, Clock, RefreshCw,
-  ExternalLink, FileText, Check, X, Info, Hash
+  ExternalLink, FileText, Check, X, Info, Hash, ShieldCheck
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
@@ -44,6 +44,11 @@ export interface FormDetail {
   slug: string;
   description?: string;
   is_active?: number;
+  settings?: {
+    require_privacy_consent?: boolean;
+    privacy_consent_text?: string;
+    [key: string]: unknown;
+  };
   questions: FormQuestion[];
 }
 
@@ -677,6 +682,8 @@ const PublicForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -740,6 +747,17 @@ const PublicForm: React.FC = () => {
       }
     }
 
+    // Validasi Persetujuan Kebijakan Privasi (UU No. 27 Tahun 2022 PDP)
+    const requireConsent = form.settings?.require_privacy_consent !== false;
+    if (requireConsent && !privacyConsent) {
+      return Swal.fire({
+        icon: 'warning',
+        title: 'Persetujuan Diperlukan',
+        text: 'Anda wajib mencentang persetujuan Kebijakan Privasi & Pelindungan Data Pribadi sebelum mengirimkan formulir ini.',
+        confirmButtonColor: '#10b981'
+      });
+    }
+
     setIsSubmitting(true);
     try {
       const finalAnswers: Record<string, unknown> = { ...answers };
@@ -765,7 +783,9 @@ const PublicForm: React.FC = () => {
 
       const payload = {
         form_id: form.id,
-        answers: finalAnswers
+        answers: finalAnswers,
+        privacy_consent_accepted: true,
+        consent_timestamp: new Date().toISOString()
       };
 
       const res = await axios.post(`${API_BASE_URL}/api/formulir/submit`, payload);
@@ -826,6 +846,7 @@ const PublicForm: React.FC = () => {
             <button
               onClick={() => {
                 setAnswers({});
+                setPrivacyConsent(false);
                 setIsSuccess(false);
               }}
               className="bg-brand-primary text-white font-bold text-xs uppercase tracking-wider px-6 py-3.5 rounded-xl shadow-lg hover:bg-emerald-600 transition-all active:scale-95"
@@ -1196,12 +1217,62 @@ const PublicForm: React.FC = () => {
             );
           })}
 
+          {/* Kotak Persetujuan Kebijakan Privasi & Perlindungan Data Pribadi (UU No. 27/2022 PDP) */}
+          {form.settings?.require_privacy_consent !== false && (
+            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs space-y-4 transition-all hover:border-brand-primary/40">
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 shadow-xs">
+                  <ShieldCheck size={24} />
+                </div>
+                <div className="space-y-2 grow">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100/80 text-emerald-800 px-2.5 py-0.5 rounded-md">
+                      Kepatuhan UU PDP
+                    </span>
+                    <h3 className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-tight">
+                      Pernyataan Kebenaran Data & Persetujuan Privasi <span className="text-red-500">*</span>
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    {form.settings?.privacy_consent_text ||
+                      'Saya menyatakan bahwa data yang saya isikan adalah benar, dan saya menyetujui pemrosesan data pribadi saya sesuai dengan Kebijakan Privasi yang berlaku.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <label className="flex items-center gap-3 cursor-pointer group select-none">
+                  <input
+                    type="checkbox"
+                    checked={privacyConsent}
+                    onChange={(e) => setPrivacyConsent(e.target.checked)}
+                    className="w-5 h-5 rounded-lg border-2 border-slate-300 text-brand-primary focus:ring-brand-primary focus:ring-offset-0 cursor-pointer accent-brand-primary"
+                  />
+                  <span className={`text-xs font-bold transition-colors ${
+                    privacyConsent ? 'text-emerald-700' : 'text-slate-700 group-hover:text-slate-900'
+                  }`}>
+                    Saya telah membaca dan menyetujui ketentuan di atas
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setIsPrivacyModalOpen(true)}
+                  className="text-xs font-bold text-brand-dark hover:text-brand-primary flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200"
+                >
+                  <FileText size={13} className="text-slate-400" />
+                  Lihat Kebijakan Privasi
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Tombol Kirim Jawaban */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 pb-12">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 pb-12">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto bg-brand-dark hover:bg-brand-primary text-white px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto bg-brand-dark hover:bg-brand-primary text-white px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isSubmitting ? (
                 <><Loader2 className="animate-spin" size={18} /> Mengirim Jawaban...</>
@@ -1212,6 +1283,99 @@ const PublicForm: React.FC = () => {
             <p className="text-[11px] font-bold text-slate-400">Garut Satu Data • Diskominfo</p>
           </div>
         </form>
+
+        {/* MODAL DIALOG RINGKASAN KEBIJAKAN PRIVASI (UX: Tetap di Halaman Form) */}
+        {isPrivacyModalOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-left">
+              
+              {/* Modal Header */}
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-800">Kebijakan Privasi & Pelindungan Data</h3>
+                    <p className="text-[11px] text-slate-500 font-semibold">UU No. 27 Tahun 2022 (UU PDP) • Diskominfo Garut</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPrivacyModalOpen(false)}
+                  className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                  title="Tutup Modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body (Scrollable) */}
+              <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-600 leading-relaxed font-medium">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <h4 className="font-black text-slate-800 text-xs mb-1">1. Komitmen Kerahasiaan & Pelindungan Hukum</h4>
+                  <p>
+                    Dinas Komunikasi dan Informatika Kabupaten Garut berkomitmen menjaga kerahasiaan dan keamanan data pribadi yang Anda berikan melalui formulir ini sesuai dengan Undang-Undang No. 27 Tahun 2022 tentang Pelindungan Data Pribadi (UU PDP).
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <h4 className="font-black text-slate-800 text-xs mb-1">2. Jenis Data yang Dikumpulkan</h4>
+                  <p>
+                    Data yang dihimpun mencakup identitas diri (Nama, NIP/NIK, Jabatan, Kontak), berkas lampiran kedinasan, tanda tangan digital, serta metadata teknis (geolocation GPS dan foto dokumentasi) sesuai keperluan formulir ini.
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <h4 className="font-black text-slate-800 text-xs mb-1">3. Tujuan Pemrosesan</h4>
+                  <p>
+                    Data hanya digunakan untuk verifikasi administrasi kedinasan, pencatatan daftar hadir, pengumpulan statistik sektoral, dan pelaporan kinerja resmi pemerintah daerah. Data tidak akan diperjualbelikan atau dibagikan kepada pihak ketiga untuk kepentingan komersial.
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <h4 className="font-black text-slate-800 text-xs mb-1">4. Hak Anda Sebagai Subjek Data</h4>
+                  <p>
+                    Anda berhak mendapatkan kejelasan informasi pemrosesan, mengajukan koreksi atau perbaikan data, serta meminta pertanggungjawaban atas data yang diserahkan melalui kanal resmi Dinas Komunikasi dan Informatika Kabupaten Garut.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-5 border-t border-slate-100 bg-slate-50/70 rounded-b-3xl flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <a
+                  href="/kebijakan-privasi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-slate-500 hover:text-brand-dark flex items-center gap-1.5 transition-colors order-2 sm:order-1"
+                >
+                  Buka Dokumen Lengkap di Tab Baru <ExternalLink size={13} />
+                </a>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPrivacyModalOpen(false)}
+                    className="w-1/2 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrivacyConsent(true);
+                      setIsPrivacyModalOpen(false);
+                    }}
+                    className="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl bg-brand-primary text-white font-bold text-xs uppercase tracking-wider hover:bg-emerald-600 transition-colors shadow-md shadow-brand-primary/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Check size={14} /> Saya Mengerti & Setuju
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

@@ -442,19 +442,29 @@ const formController = {
         try {
             await connection.beginTransaction();
 
-            const { form_id, answers } = req.body;
+            const { form_id, answers, privacy_consent_accepted, consent_timestamp } = req.body;
 
             if (!form_id || !answers || typeof answers !== 'object') {
                 return res.status(400).json({ success: false, message: 'Data formulir tidak lengkap' });
             }
 
-            // Cek apakah formulir ada dan masih aktif
-            const [forms] = await connection.execute('SELECT id, is_active FROM forms WHERE id = ?', [form_id]);
+            // Cek apakah formulir ada, aktif, dan ambil settings privasi
+            const [forms] = await connection.execute('SELECT id, is_active, settings FROM forms WHERE id = ?', [form_id]);
             if (forms.length === 0) {
                 return res.status(404).json({ success: false, message: 'Formulir tidak ditemukan' });
             }
             if (forms[0].is_active === 0) {
                 return res.status(403).json({ success: false, message: 'Formulir ini sudah tidak menerima respon baru' });
+            }
+
+            // Validasi Persetujuan Kebijakan Privasi (Kepatuhan UU No. 27 Tahun 2022 PDP)
+            const formSettings = safeJsonParse(forms[0].settings, {});
+            const requireConsent = formSettings.require_privacy_consent !== false;
+            if (requireConsent && !privacy_consent_accepted) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Persetujuan terhadap Kebijakan Privasi & Pelindungan Data Pribadi wajib disetujui sebelum mengirimkan formulir.'
+                });
             }
 
             // Insert ke tabel form_responses

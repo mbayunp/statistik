@@ -6,7 +6,7 @@ import {
   ArrowLeft, Plus, Trash2, Save, Type, CheckSquare, CircleDot, AlignLeft, X,
   Heading, Image as ImageIcon, Minus, FileText, Hash, List, Phone, Mail,
   MapPin, Compass, Star, UploadCloud, Camera, Calendar, Clock, Link as LinkIcon,
-  PenTool, Copy, ArrowUp, ArrowDown, Sparkles, Eye, Loader2, Upload
+  PenTool, Copy, ArrowUp, ArrowDown, Sparkles, Eye, Loader2, Upload, ShieldCheck
 } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
@@ -268,6 +268,11 @@ const FormBuilder: React.FC = () => {
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [formSettings, setFormSettings] = useState<Record<string, unknown>>({});
+  const [requirePrivacyConsent, setRequirePrivacyConsent] = useState(true);
+  const [privacyConsentText, setPrivacyConsentText] = useState(
+    'Saya menyatakan bahwa data yang saya isikan adalah benar, dan saya menyetujui pemrosesan data pribadi saya sesuai dengan Kebijakan Privasi yang berlaku.'
+  );
   const [questions, setQuestions] = useState<FormElement[]>([
     {
       id: `q_${Date.now()}`,
@@ -293,6 +298,13 @@ const FormBuilder: React.FC = () => {
             setSlug(formData.slug || '');
             setDescription(formData.description || '');
             setIsActive(formData.is_active !== 0);
+
+            const rawSettings = formData.settings || {};
+            setFormSettings(rawSettings);
+            setRequirePrivacyConsent(rawSettings.require_privacy_consent !== false);
+            if (rawSettings.privacy_consent_text) {
+              setPrivacyConsentText(rawSettings.privacy_consent_text);
+            }
 
             if (formData.questions && formData.questions.length > 0) {
               setQuestions(
@@ -511,6 +523,11 @@ const FormBuilder: React.FC = () => {
         slug: finalSlug,
         description,
         is_active: isActive ? 1 : 0,
+        settings: {
+          ...formSettings,
+          require_privacy_consent: requirePrivacyConsent,
+          privacy_consent_text: privacyConsentText.trim() || 'Saya menyatakan bahwa data yang saya isikan adalah benar, dan saya menyetujui pemrosesan data pribadi saya sesuai dengan Kebijakan Privasi yang berlaku.'
+        },
         questions
       };
 
@@ -684,6 +701,49 @@ const FormBuilder: React.FC = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* Pengaturan Privasi & Persetujuan (UU PDP) */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="flex items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                    Wajibkan Persetujuan Kebijakan Privasi (UU PDP)
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Responden wajib mencentang persetujuan pemrosesan data pribadi sebelum mengirim formulir.
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1 sm:mt-0">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={requirePrivacyConsent}
+                  onChange={(e) => setRequirePrivacyConsent(e.target.checked)}
+                />
+                <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+
+            {requirePrivacyConsent && (
+              <div className="pt-3 border-t border-slate-200/80">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                  Teks Persetujuan Kustom (Opsional)
+                </label>
+                <textarea
+                  className="w-full text-slate-700 bg-white border border-slate-200 rounded-xl p-3 text-xs outline-none focus:border-brand-primary resize-none placeholder:text-slate-400 leading-relaxed font-medium"
+                  rows={2}
+                  value={privacyConsentText}
+                  onChange={(e) => setPrivacyConsentText(e.target.value)}
+                  placeholder="Tuliskan klausul persetujuan kustom..."
+                />
+              </div>
+            )}
           </div>
         </div>
 
