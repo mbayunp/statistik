@@ -172,6 +172,7 @@ const formController = {
             if (questions && Array.isArray(questions)) {
                 // Ambil daftar question_id yang sudah ada di database untuk formulir ini
                 const [existingQuestions] = await connection.execute('SELECT id FROM form_questions WHERE form_id = ?', [id]);
+                const existingIds = existingQuestions.map(eq => eq.id);
                 const keptExistingIds = [];
                 const newQuestionsToInsert = [];
 
