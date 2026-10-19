@@ -19,9 +19,9 @@ const Login: React.FC = () => {
 
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password });
-      
+
       localStorage.setItem('token', res.data.token);
-      
+
       Swal.fire({
         icon: 'success',
         title: 'Login Berhasil!',
@@ -58,7 +58,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative overflow-hidden z-0">
-      
+
       {/* Ornamen Background Glow (Ambient) */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-brand-primary/20 rounded-full blur-[100px] -z-10 pointer-events-none animate-pulse-slow"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-brand-secondary/20 rounded-full blur-[100px] -z-10 pointer-events-none animate-pulse-slow delay-1000"></div>
@@ -69,7 +69,7 @@ const Login: React.FC = () => {
             <div className="absolute inset-0 bg-brand-primary/10 blur-2xl rounded-full scale-150 -z-10"></div>
             <img src={logo} alt="Logo Garut Satu Data" className="h-16 w-auto relative z-10 drop-shadow-sm" />
           </div>
-          
+
           <h2 className="text-3xl font-black text-slate-800 text-center mb-2 tracking-tight">Masuk Admin</h2>
           <p className="text-slate-500 text-center text-sm mb-10 font-medium leading-relaxed">
             Kelola portal Bidang Penyelenggaraan Statistik Sektoral
@@ -81,8 +81,8 @@ const Login: React.FC = () => {
               <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-primary transition-colors duration-300">
                 <User size={20} />
               </div>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Username"
                 className="w-full bg-slate-100/50 border border-slate-200/60 rounded-2xl py-4 pl-14 pr-5 focus:bg-white focus:border-brand-primary/50 focus:ring-4 focus:ring-brand-primary/10 outline-none transition-all duration-300 font-semibold text-slate-700 placeholder:text-slate-400 placeholder:font-medium"
                 value={username}
@@ -97,8 +97,8 @@ const Login: React.FC = () => {
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-secondary transition-colors duration-300">
                   <Lock size={20} />
                 </div>
-                <input 
-                  type={showPassword ? "text" : "password"} 
+                <input
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   className="w-full bg-slate-100/50 border border-slate-200/60 rounded-2xl py-4 pl-14 pr-14 focus:bg-white focus:border-brand-secondary/50 focus:ring-4 focus:ring-brand-secondary/10 outline-none transition-all duration-300 font-semibold text-slate-700 placeholder:text-slate-400 placeholder:font-medium"
                   value={password}
@@ -106,7 +106,7 @@ const Login: React.FC = () => {
                   required
                 />
                 {/* Toggle Show/Hide Password */}
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-400 hover:text-brand-secondary transition-colors duration-200 focus:outline-none"
@@ -114,10 +114,10 @@ const Login: React.FC = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-              
+
               <div className="flex justify-end px-2">
-                <Link 
-                  to="/reset-password" 
+                <Link
+                  to="/reset-password"
                   className="text-[10px] font-black text-slate-400 hover:text-amber-500 uppercase tracking-widest transition-colors duration-200"
                 >
                   Lupa Password?
@@ -126,14 +126,14 @@ const Login: React.FC = () => {
             </div>
 
             {/* Tombol Login */}
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isLoading}
               className="w-full bg-brand-primary hover:bg-[#00b89e] text-slate-950 py-3.5 rounded-xl font-extrabold shadow-sm active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2.5 text-xs uppercase tracking-wider disabled:opacity-70 disabled:cursor-not-allowed group cursor-pointer"
             >
               {isLoading ? (
                 <>
-                  <Loader2 size={18} className="animate-spin" /> 
+                  <Loader2 size={18} className="animate-spin" />
                   MEMPROSES...
                 </>
               ) : (
@@ -146,26 +146,12 @@ const Login: React.FC = () => {
 
           {/* Navigasi Bawah */}
           <div className="mt-10 space-y-5">
-            <div className="relative flex items-center justify-center">
-              <div className="absolute w-full h-px bg-slate-200"></div>
-              <span className="relative bg-white px-4 text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                ATAU
-              </span>
-            </div>
-
-            <p className="text-center text-sm font-medium text-slate-500">
-              Belum punya akun admin?{' '}
-              <Link to="/register" className="text-brand-primary font-bold hover:text-brand-secondary hover:underline transition-colors">
-                Daftar di sini
-              </Link>
-            </p>
-
             <div className="pt-2">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="flex items-center justify-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-700 transition-colors group"
               >
-                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-300" /> 
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-300" />
                 Kembali ke Beranda
               </Link>
             </div>

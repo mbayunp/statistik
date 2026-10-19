@@ -49,11 +49,10 @@ const formController = {
         }
     },
 
-    // 2. Membuat Formulir Baru & Menyimpan Elemen / Pertanyaannya
     createForm: async (req, res) => {
         const connection = await db.getConnection();
         try {
-            await connection.beginTransaction(); // Mulai transaksi
+            await connection.beginTransaction();
 
             const { title, slug, description, is_active, settings, questions } = req.body;
 
@@ -308,8 +307,8 @@ const formController = {
             const form = forms[0];
 
             if (form.is_active === 0) {
-                return res.status(403).json({ 
-                    success: false, 
+                return res.status(403).json({
+                    success: false,
                     message: 'Formulir ini sedang tidak aktif atau telah ditutup.',
                     is_inactive: true
                 });
@@ -337,9 +336,9 @@ const formController = {
                 timestamp: Date.now()
             });
 
-            res.status(200).json({ 
-                success: true, 
-                data: responseData 
+            res.status(200).json({
+                success: true,
+                data: responseData
             });
         } catch (error) {
             console.error('Error getFormBySlug:', error);
@@ -368,13 +367,13 @@ const formController = {
                 layout_config: safeJsonParse(q.layout_config, {})
             }));
 
-            res.status(200).json({ 
-                success: true, 
+            res.status(200).json({
+                success: true,
                 data: {
                     ...form,
                     settings: safeJsonParse(form.settings, {}),
                     questions: parsedQuestions
-                } 
+                }
             });
         } catch (error) {
             console.error('Error getFormByIdAdmin:', error);
@@ -414,7 +413,7 @@ const formController = {
             const formSlug = forms.length > 0 ? forms[0].slug : null;
 
             const [result] = await db.execute('DELETE FROM forms WHERE id = ?', [id]);
-            
+
             if (result.affectedRows === 0) {
                 return res.status(404).json({ success: false, message: 'Formulir tidak ditemukan' });
             }
