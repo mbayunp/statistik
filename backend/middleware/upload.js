@@ -14,11 +14,6 @@ const storage = multer.diskStorage({
             destFolder = './uploads/absensi/';
         }
 
-        // Auto-create folder jika belum ada agar tidak error saat deploy
-        if (!fs.existsSync(destFolder)) {
-            fs.mkdirSync(destFolder, { recursive: true });
-        }
-
         cb(null, destFolder);
     },
     filename: function (req, file, cb) {

@@ -47,18 +47,76 @@ export interface FormDetail {
   questions: FormQuestion[];
 }
 
+// Helper: Kompresi & Resize Gambar di Sisi Client (Maks lebar/tinggi 1280px, JPEG 0.75)
+const compressImageFile = (file: File, maxDimension = 1280, quality = 0.75): Promise<Blob | File> => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
+      return resolve(file);
+    }
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(file);
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob && blob.size < file.size) {
+            resolve(blob);
+          } else {
+            resolve(file);
+          }
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+    img.src = objectUrl;
+  });
+};
+
+// Helper: Konversi DataURL (Base64) ke Blob untuk diunggah saat Submit
+const dataURLToBlob = (dataURL: string): Blob => {
+  const parts = dataURL.split(';base64,');
+  const contentType = parts[0].split(':')[1] || 'image/png';
+  const raw = window.atob(parts[1]);
+  const rawLength = raw.length;
+  const uInt8Array = new Uint8Array(rawLength);
+  for (let i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+  return new Blob([uInt8Array], { type: contentType });
+};
+
 // ============================================================================
 // 1. SUB-KOMPONEN: DIGITAL SIGNATURE PAD (CANVAS)
 // ============================================================================
 const DigitalSignaturePad: React.FC<{
   value: string;
-  onChange: (url: string) => void;
+  onChange: (dataUrlOrUrl: string) => void;
   required?: boolean;
 }> = ({ value, onChange }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(!value);
-  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -74,6 +132,18 @@ const DigitalSignaturePad: React.FC<{
     ctx.lineJoin = 'round';
     ctx.strokeStyle = '#0f172a'; // slate-900
   }, []);
+
+  // Reset canvas apabila value dikosongkan dari luar (misal kirim tanggapan lain)
+  useEffect(() => {
+    if (!value && !isEmpty) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      setIsEmpty(true);
+    }
+  }, [value, isEmpty]);
 
   const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -118,30 +188,16 @@ const DigitalSignaturePad: React.FC<{
     ctx.stroke();
   };
 
-  const stopDrawing = async () => {
+  const stopDrawing = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
 
-    // Auto-upload snapshot signature ke server
+    // Simpan snapshot di state lokal sebagai DataURL (TANPA langsung HTTP POST per goresan!)
+    // Upload ke server hanya dilakukan 1 kali saat tombol Submit ditekan.
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
-      setIsUploading(true);
-      try {
-        const formData = new FormData();
-        formData.append('file_attachment', blob, `sig-${Date.now()}.png`);
-        const res = await axios.post(`${API_BASE_URL}/api/formulir/upload`, formData);
-        if (res.data.success) {
-          onChange(res.data.file_url);
-        }
-      } catch (err) {
-        console.error('Upload signature error:', err);
-      } finally {
-        setIsUploading(false);
-      }
-    }, 'image/png');
+    const dataUrl = canvas.toDataURL('image/png');
+    onChange(dataUrl);
   };
 
   const clearCanvas = () => {
@@ -173,12 +229,6 @@ const DigitalSignaturePad: React.FC<{
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-slate-400">
             <PenTool size={24} className="mb-1 opacity-40" />
             <span className="text-xs font-semibold">Tanda tangani di area ini (Gunakan mouse atau layar sentuh)</span>
-          </div>
-        )}
-
-        {isUploading && (
-          <div className="absolute top-2 right-2 bg-slate-900/70 text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1.5 backdrop-blur-xs">
-            <Loader2 className="animate-spin" size={12} /> Menyimpan...
           </div>
         )}
       </div>
@@ -219,7 +269,7 @@ const CameraCaptureInput: React.FC<{
     setIsCameraActive(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false
       });
       streamRef.current = stream;
@@ -254,13 +304,27 @@ const CameraCaptureInput: React.FC<{
     const video = videoRef.current;
     if (!video) return;
 
+    // Batasi dimensi foto maksimal 1280px agar hemat bandwidth dan RAM server
+    const maxDim = 1280;
+    let width = video.videoWidth || 640;
+    let height = video.videoHeight || 480;
+    if (width > maxDim || height > maxDim) {
+      if (width > height) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0, width, height);
     stopCamera();
 
     canvas.toBlob(async (blob) => {
@@ -279,7 +343,7 @@ const CameraCaptureInput: React.FC<{
       } finally {
         setIsUploading(false);
       }
-    }, 'image/jpeg', 0.85);
+    }, 'image/jpeg', 0.75);
   };
 
   return (
@@ -473,8 +537,12 @@ const FileUploadInput: React.FC<{
     setFileName(file.name);
     setIsUploading(true);
     try {
+      // Kompresi otomatis jika file adalah gambar besar
+      const processedBlob = await compressImageFile(file);
+      const uploadFileName = processedBlob !== file ? file.name.replace(/\.[^.]+$/, '.jpg') : file.name;
+
       const formData = new FormData();
-      formData.append('file_attachment', file);
+      formData.append('file_attachment', processedBlob, uploadFileName);
       const res = await axios.post(`${API_BASE_URL}/api/formulir/upload`, formData);
       if (res.data.success) {
         onChange(res.data.file_url);
@@ -531,7 +599,7 @@ const FileUploadInput: React.FC<{
             <>
               <UploadCloud size={28} className="text-slate-400 mb-2" />
               <span className="text-xs font-bold text-slate-700">Pilih atau Seret Berkas ke Sini</span>
-              <span className="text-[10px] text-slate-400 mt-0.5">PDF, Word, Excel, ZIP (Maksimal {maxSizeMb}MB)</span>
+              <span className="text-[10px] text-slate-400 mt-0.5">PDF, Word, Excel, Gambar, ZIP (Maksimal {maxSizeMb}MB)</span>
             </>
           )}
           <input
@@ -674,9 +742,30 @@ const PublicForm: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      const finalAnswers: Record<string, unknown> = { ...answers };
+
+      // Unggah tanda tangan yang masih berupa DataURL (hanya 1 kali upload saat Submit!)
+      for (const q of form.questions) {
+        if (q.question_type === 'signature') {
+          const val = finalAnswers[q.id];
+          if (typeof val === 'string' && val.startsWith('data:image/')) {
+            const blob = dataURLToBlob(val);
+            const formData = new FormData();
+            formData.append('file_attachment', blob, `sig-${Date.now()}.png`);
+            const uploadRes = await axios.post(`${API_BASE_URL}/api/formulir/upload`, formData);
+            if (uploadRes.data.success) {
+              finalAnswers[q.id] = uploadRes.data.file_url;
+              setAnswers((prev) => ({ ...prev, [q.id]: uploadRes.data.file_url }));
+            } else {
+              throw new Error('Gagal mengunggah tanda tangan digital.');
+            }
+          }
+        }
+      }
+
       const payload = {
         form_id: form.id,
-        answers: answers
+        answers: finalAnswers
       };
 
       const res = await axios.post(`${API_BASE_URL}/api/formulir/submit`, payload);

@@ -30,7 +30,23 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const fs = require('fs');
+
+// Pastikan folder upload tersedia saat startup (menghindari synchronous I/O per request)
+[
+  path.join(__dirname, 'uploads'),
+  path.join(__dirname, 'uploads/laporan'),
+  path.join(__dirname, 'uploads/absensi')
+].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1d',
+  etag: true
+}));
 
 const kegiatanRoutes = require('./routes/kegiatanRoutes');
 const authRoutes = require('./routes/authRoutes');

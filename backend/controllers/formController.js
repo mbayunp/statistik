@@ -1,6 +1,18 @@
 const db = require('../config/db');
 const { logActivity } = require('../utils/logger');
 
+// Simple in-memory cache untuk struktur formulir publik berdasarkan slug (TTL: 60 detik)
+const formSlugCache = new Map();
+const FORM_CACHE_TTL_MS = 60 * 1000;
+
+function invalidateFormCache(slug) {
+    if (slug) {
+        formSlugCache.delete(slug);
+    } else {
+        formSlugCache.clear();
+    }
+}
+
 // Helper function untuk parsing JSON yang aman
 function safeJsonParse(value, defaultValue = null) {
     if (!value) return defaultValue;
@@ -65,37 +77,39 @@ const formController = {
             );
             const formId = formResult.insertId;
 
-            // Insert semua elemen / pertanyaan (jika ada)
+            // Insert semua elemen / pertanyaan secara bulk (jika ada)
             if (questions && Array.isArray(questions) && questions.length > 0) {
-                for (let i = 0; i < questions.length; i++) {
-                    const q = questions[i];
+                const questionValues = questions.map((q, i) => {
                     const optionsString = q.options ? JSON.stringify(q.options) : null;
                     const validationString = q.validation_rules ? JSON.stringify(q.validation_rules) : (q.validation ? JSON.stringify(q.validation) : null);
                     const layoutConfigString = q.layout_config ? JSON.stringify(q.layout_config) : null;
                     const elementCategory = q.element_category || (['section_header', 'banner_media', 'paragraph_text', 'divider'].includes(q.question_type) ? 'layout' : 'input');
 
-                    await connection.execute(
-                        `INSERT INTO form_questions 
-                        (form_id, element_category, question_text, question_type, description, placeholder, options, validation_rules, layout_config, is_required, urutan) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [
-                            formId,
-                            elementCategory,
-                            q.question_text || '',
-                            q.question_type || 'short_text',
-                            q.description || null,
-                            q.placeholder || null,
-                            optionsString,
-                            validationString,
-                            layoutConfigString,
-                            q.is_required ? 1 : 0,
-                            i
-                        ]
-                    );
-                }
+                    return [
+                        formId,
+                        elementCategory,
+                        q.question_text || '',
+                        q.question_type || 'short_text',
+                        q.description || null,
+                        q.placeholder || null,
+                        optionsString,
+                        validationString,
+                        layoutConfigString,
+                        q.is_required ? 1 : 0,
+                        i
+                    ];
+                });
+
+                await connection.query(
+                    `INSERT INTO form_questions 
+                    (form_id, element_category, question_text, question_type, description, placeholder, options, validation_rules, layout_config, is_required, urutan) 
+                    VALUES ?`,
+                    [questionValues]
+                );
             }
 
             await connection.commit(); // Simpan permanen ke database
+            invalidateFormCache(slug);
 
             // Log Aktivitas
             const userId = req.user ? req.user.id : null;
@@ -159,8 +173,8 @@ const formController = {
             if (questions && Array.isArray(questions)) {
                 // Ambil daftar question_id yang sudah ada di database untuk formulir ini
                 const [existingQuestions] = await connection.execute('SELECT id FROM form_questions WHERE form_id = ?', [id]);
-                const existingIds = existingQuestions.map(eq => eq.id);
-                const keptIds = [];
+                const keptExistingIds = [];
+                const newQuestionsToInsert = [];
 
                 for (let i = 0; i < questions.length; i++) {
                     const q = questions[i];
@@ -200,44 +214,52 @@ const formController = {
                                 id
                             ]
                         );
-                        keptIds.push(qId);
+                        keptExistingIds.push(qId);
                     } else {
-                        // Tambahkan pertanyaan baru
-                        const [insertResult] = await connection.execute(
-                            `INSERT INTO form_questions 
-                            (form_id, element_category, question_text, question_type, description, placeholder, options, validation_rules, layout_config, is_required, urutan) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                            [
-                                id,
-                                elementCategory,
-                                q.question_text || '',
-                                q.question_type || 'short_text',
-                                q.description || null,
-                                q.placeholder || null,
-                                optionsString,
-                                validationString,
-                                layoutConfigString,
-                                q.is_required ? 1 : 0,
-                                i
-                            ]
-                        );
-                        keptIds.push(insertResult.insertId);
+                        // Kumpulkan pertanyaan baru untuk di-insert secara bulk
+                        newQuestionsToInsert.push([
+                            id,
+                            elementCategory,
+                            q.question_text || '',
+                            q.question_type || 'short_text',
+                            q.description || null,
+                            q.placeholder || null,
+                            optionsString,
+                            validationString,
+                            layoutConfigString,
+                            q.is_required ? 1 : 0,
+                            i
+                        ]);
                     }
                 }
 
-                // Hapus pertanyaan yang tidak ada lagi di payload editor
-                if (keptIds.length > 0) {
-                    const placeholders = keptIds.map(() => '?').join(',');
+                // Hapus pertanyaan lama yang tidak ada lagi di payload editor
+                if (keptExistingIds.length > 0) {
+                    const placeholders = keptExistingIds.map(() => '?').join(',');
                     await connection.execute(
                         `DELETE FROM form_questions WHERE form_id = ? AND id NOT IN (${placeholders})`,
-                        [id, ...keptIds]
+                        [id, ...keptExistingIds]
                     );
-                } else {
+                } else if (existingIds.length > 0) {
                     await connection.execute('DELETE FROM form_questions WHERE form_id = ?', [id]);
+                }
+
+                // Eksekusi Bulk Insert sekaligus untuk semua pertanyaan baru (menghindari N+1 query)
+                if (newQuestionsToInsert.length > 0) {
+                    await connection.query(
+                        `INSERT INTO form_questions 
+                        (form_id, element_category, question_text, question_type, description, placeholder, options, validation_rules, layout_config, is_required, urutan) 
+                        VALUES ?`,
+                        [newQuestionsToInsert]
+                    );
                 }
             }
 
             await connection.commit();
+            invalidateFormCache(forms[0].slug);
+            if (slug && slug !== forms[0].slug) {
+                invalidateFormCache(slug);
+            }
 
             // Log Aktivitas
             const userId = req.user ? req.user.id : null;
@@ -263,6 +285,22 @@ const formController = {
         try {
             const { slug } = req.params;
 
+            // Cek in-memory cache terlebih dahulu
+            const cached = formSlugCache.get(slug);
+            if (cached && (Date.now() - cached.timestamp < FORM_CACHE_TTL_MS)) {
+                if (cached.data.is_active === 0) {
+                    return res.status(403).json({
+                        success: false,
+                        message: 'Formulir ini sedang tidak aktif atau telah ditutup.',
+                        is_inactive: true
+                    });
+                }
+                return res.status(200).json({
+                    success: true,
+                    data: cached.data
+                });
+            }
+
             const [forms] = await db.execute('SELECT * FROM forms WHERE slug = ?', [slug]);
             if (forms.length === 0) {
                 return res.status(404).json({ success: false, message: 'Formulir tidak ditemukan' });
@@ -287,13 +325,21 @@ const formController = {
                 layout_config: safeJsonParse(q.layout_config, {})
             }));
 
+            const responseData = {
+                ...form,
+                settings: safeJsonParse(form.settings, {}),
+                questions: parsedQuestions
+            };
+
+            // Simpan ke cache
+            formSlugCache.set(slug, {
+                data: responseData,
+                timestamp: Date.now()
+            });
+
             res.status(200).json({ 
                 success: true, 
-                data: {
-                    ...form,
-                    settings: safeJsonParse(form.settings, {}),
-                    questions: parsedQuestions
-                } 
+                data: responseData 
             });
         } catch (error) {
             console.error('Error getFormBySlug:', error);
@@ -363,14 +409,17 @@ const formController = {
         try {
             const { id } = req.params;
 
-            const [forms] = await db.execute('SELECT title FROM forms WHERE id = ?', [id]);
+            const [forms] = await db.execute('SELECT title, slug FROM forms WHERE id = ?', [id]);
             const formTitle = forms.length > 0 ? forms[0].title : `ID ${id}`;
+            const formSlug = forms.length > 0 ? forms[0].slug : null;
 
             const [result] = await db.execute('DELETE FROM forms WHERE id = ?', [id]);
             
             if (result.affectedRows === 0) {
                 return res.status(404).json({ success: false, message: 'Formulir tidak ditemukan' });
             }
+
+            invalidateFormCache(formSlug);
 
             // Log Aktivitas
             const userId = req.user ? req.user.id : null;
@@ -416,9 +465,10 @@ const formController = {
             );
             const responseId = resResult.insertId;
 
-            // Looping dan simpan setiap jawaban pertanyaan
+            // Siapkan array data untuk bulk insert (menghindari N+1 query di dalam transaksi)
+            const answersToInsert = [];
             for (const [questionId, answerValue] of Object.entries(answers)) {
-                if (answerValue === undefined || answerValue === null) continue;
+                if (answerValue === undefined || answerValue === null || answerValue === '') continue;
 
                 let answerText = '';
                 let answerJson = null;
@@ -427,6 +477,7 @@ const formController = {
                     // Bisa array (checkbox) atau object (geolocation, file metadata, dll)
                     answerJson = JSON.stringify(answerValue);
                     if (Array.isArray(answerValue)) {
+                        if (answerValue.length === 0) continue;
                         answerText = answerValue.join(', ');
                     } else {
                         answerText = JSON.stringify(answerValue);
@@ -444,9 +495,13 @@ const formController = {
                     }
                 }
 
-                await connection.execute(
-                    'INSERT INTO form_answers (response_id, question_id, answer_text, answer_json) VALUES (?, ?, ?, ?)',
-                    [responseId, questionId, answerText, answerJson]
+                answersToInsert.push([responseId, questionId, answerText, answerJson]);
+            }
+
+            if (answersToInsert.length > 0) {
+                await connection.query(
+                    'INSERT INTO form_answers (response_id, question_id, answer_text, answer_json) VALUES ?',
+                    [answersToInsert]
                 );
             }
 
