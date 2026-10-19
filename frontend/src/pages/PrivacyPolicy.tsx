@@ -9,12 +9,12 @@ const PrivacyPolicy: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20 pb-24 font-sans text-slate-800">
-      
+    <div className="min-h-screen bg-slate-50 pb-24 font-sans text-slate-800">
+
       {/* 1. HERO HEADER */}
       <section className="bg-brand-dark text-white py-20 relative overflow-hidden">
-        <div className="container mx-auto px-6 relative z-10 max-w-4xl text-center">
-          
+        <div className="container mx-auto px-6 relative max-w-4xl text-center">
+
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl mb-8 transition-colors cursor-pointer border border-white/10 backdrop-blur-sm"
@@ -46,7 +46,7 @@ const PrivacyPolicy: React.FC = () => {
 
       {/* 2. ISI KEBIJAKAN PRIVASI */}
       <main className="container mx-auto px-6 max-w-4xl -mt-8 relative z-20">
-        
+
         {/* Ringkasan Komitmen Box */}
         <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 mb-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
           <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
@@ -61,7 +61,7 @@ const PrivacyPolicy: React.FC = () => {
         </div>
 
         <div className="space-y-8 bg-white p-8 sm:p-12 rounded-3xl shadow-sm border border-slate-200">
-          
+
           {/* Bagian 1: Pendahuluan */}
           <section className="space-y-3">
             <div className="flex items-center gap-3">
