@@ -33,6 +33,7 @@ import FormulirList from './pages/admin/FormulirList';
 import FormBuilder from './pages/admin/FormBuilder';
 import FormulirResponses from './pages/admin/FormulirResponses';
 import ShortlinkList from './pages/admin/ShortlinkList';
+import QrCodeGenerator from './pages/admin/QrCodeGenerator';
 import ActivityLogPage from './pages/admin/ActivityLogPage';
 import { isTokenExpired, handleSessionExpired } from './utils/auth';
 import KalenderAdmin from './pages/admin/KalenderUtama';
@@ -143,6 +144,7 @@ const App: React.FC = () => {
           <Route path="formulir/edit/:id" element={<FormBuilder />} />
           <Route path="formulir/responses/:formId" element={<FormulirResponses />} />
           <Route path="tautan" element={<ShortlinkList />} />
+          <Route path="qr-generator" element={<QrCodeGenerator />} />
           <Route path="riwayat-aktivitas" element={<ActivityLogPage />} />
         </Route>
 

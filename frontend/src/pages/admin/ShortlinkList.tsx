@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { Link as LinkIcon, Copy, Trash2, ExternalLink, Search, Loader2, MousePointerClick } from 'lucide-react';
+import { Link as LinkIcon, Copy, Trash2, ExternalLink, Search, Loader2, MousePointerClick, QrCode } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
 
 interface Shortlink {
@@ -13,6 +14,7 @@ interface Shortlink {
 }
 
 const ShortlinkList: React.FC = () => {
+  const navigate = useNavigate();
   const [links, setLinks] = useState<Shortlink[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -207,6 +209,13 @@ const ShortlinkList: React.FC = () => {
                     </td>
                     <td className="p-6 text-center">
                       <div className="flex justify-center gap-2">
+                        <button 
+                          onClick={() => navigate(`/admin/qr-generator?url=${encodeURIComponent(`${currentDomain}/s/${link.short_code}`)}&title=${encodeURIComponent(`Tautan: ${link.short_code}`)}&subtitle=${encodeURIComponent(link.original_url)}`)} 
+                          className="p-2 bg-teal-50 text-teal-600 hover:bg-teal-500 hover:text-white rounded-xl transition-all" 
+                          title="Buat QR Code"
+                        >
+                          <QrCode size={16} />
+                        </button>
                         <button onClick={() => handleCopy(link.short_code)} className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all" title="Salin Link">
                           <Copy size={16} />
                         </button>

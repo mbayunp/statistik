@@ -27,7 +27,8 @@ import {
   History,
   Briefcase,
   UserCheck,
-  ScanFace
+  ScanFace,
+  QrCode
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import logo from '../../assets/images/logo.png';
@@ -61,6 +62,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: 'Absensi Tenaga Ahli', path: '/admin/absensi-ta', icon: <ScanFace size={20} /> },
     { name: 'Pembuat Formulir', path: '/admin/formulir', icon: <ListChecks size={20} /> },
     { name: 'Tautan Pendek', path: '/admin/tautan', icon: <LinkIcon size={20} /> },
+    { name: 'QR Code Generator', path: '/admin/qr-generator', icon: <QrCode size={20} /> },
     { name: 'Laporan Tenaga Ahli', path: '/admin/laporan-tenaga-ahli', icon: <FileText size={20} /> }, 
     { name: 'Laporan Kinerja', path: '/admin/laporan-kinerja', icon: <Briefcase size={20} /> }, 
     { name: 'Daftar Kegiatan', path: '/admin/daftar-kegiatan', icon: <Eye size={20} /> },
@@ -82,6 +84,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (path.startsWith('/admin/absensi-ta')) return 'Absensi Tenaga Ahli';
     if (path.startsWith('/admin/formulir')) return 'Pembuat Formulir';
     if (path.startsWith('/admin/tautan')) return 'Tautan Pendek';
+    if (path.startsWith('/admin/qr-generator')) return 'QR Code Generator';
     if (path.startsWith('/admin/laporan-tenaga-ahli')) return 'Laporan Tenaga Ahli';
     if (path.startsWith('/admin/laporan-kinerja')) return 'Laporan Kinerja';
     if (path.startsWith('/admin/daftar-kegiatan')) return 'Daftar Kegiatan';

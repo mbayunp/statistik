@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { ListChecks, Plus, Settings, Eye, Users, Trash2, Search, FileText, Loader2, Inbox } from 'lucide-react';
+import { ListChecks, Plus, Settings, Eye, Users, Trash2, Search, FileText, Loader2, Inbox, QrCode } from 'lucide-react';
 import { API_BASE_URL } from '../../config'; 
 
 const FormulirList: React.FC = () => {
@@ -145,26 +145,37 @@ const FormulirList: React.FC = () => {
                 </div>
 
               {/* Card Footer - Actions */}
-              <div className="p-4 grid grid-cols-3 gap-2 mt-auto">
+              <div className="p-4 grid grid-cols-4 gap-1.5 mt-auto">
                 <button 
                   onClick={() => navigate(`/admin/formulir/edit/${form.id}`)}
                   className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
+                  title="Ubah Formulir"
                 >
-                  <Settings size={18} />
+                  <Settings size={17} />
                   <span className="text-[9px] font-black uppercase tracking-wider">Edit</span>
                 </button>
                 <button 
-                    onClick={() => window.open(`/form/${form.slug}`, '_blank')}
-                    className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                  onClick={() => window.open(`/form/${form.slug}`, '_blank')}
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                  title="Lihat Pratinjau Publik"
                 >
-                    <Eye size={18} />
-                    <span className="text-[9px] font-black uppercase tracking-wider">Preview</span>
+                  <Eye size={17} />
+                  <span className="text-[9px] font-black uppercase tracking-wider">Preview</span>
+                </button>
+                <button 
+                  onClick={() => navigate(`/admin/qr-generator?url=${encodeURIComponent(`${window.location.origin}/form/${form.slug}`)}&title=${encodeURIComponent(form.title)}&subtitle=${encodeURIComponent('Pindai untuk Mengisi Formulir')}`)}
+                  className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-400 hover:bg-teal-50 hover:text-teal-600 transition-colors"
+                  title="Buat QR Code"
+                >
+                  <QrCode size={17} />
+                  <span className="text-[9px] font-black uppercase tracking-wider">QR Code</span>
                 </button>
                 <button 
                   onClick={() => handleDelete(form.id)}
                   className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                  title="Hapus Formulir"
                 >
-                  <Trash2 size={18} />
+                  <Trash2 size={17} />
                   <span className="text-[9px] font-black uppercase tracking-wider">Hapus</span>
                 </button>
               </div>
