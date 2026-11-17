@@ -13,6 +13,7 @@ import Kegiatan from './pages/Kegiatan';
 import PublicForm from './pages/PublicForm';
 import LinkRedirect from './pages/LinkRedirect';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import PublicMicrosite from './pages/PublicMicrosite';
 
 import Dashboard from './pages/admin/Dashboard';
 import RekapanKegiatan from './pages/admin/RekapanKegiatan';
@@ -34,6 +35,8 @@ import FormBuilder from './pages/admin/FormBuilder';
 import FormulirResponses from './pages/admin/FormulirResponses';
 import ShortlinkList from './pages/admin/ShortlinkList';
 import QrCodeGenerator from './pages/admin/QrCodeGenerator';
+import MicrositeList from './pages/admin/MicrositeList';
+import MicrositeBuilder from './pages/admin/MicrositeBuilder';
 import ActivityLogPage from './pages/admin/ActivityLogPage';
 import { isTokenExpired, handleSessionExpired } from './utils/auth';
 import KalenderAdmin from './pages/admin/KalenderUtama';
@@ -107,6 +110,7 @@ const App: React.FC = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/presensi-ta" element={<PresensiTenagaAhli />} />
         <Route path="/presensi" element={<Navigate to="/presensi-ta" replace />} />
+        <Route path="/p/:slug" element={<PublicMicrosite />} />
 
         {/* === GRUP HALAMAN ADMIN === */}
         <Route 
@@ -145,6 +149,9 @@ const App: React.FC = () => {
           <Route path="formulir/responses/:formId" element={<FormulirResponses />} />
           <Route path="tautan" element={<ShortlinkList />} />
           <Route path="qr-generator" element={<QrCodeGenerator />} />
+          <Route path="microsites" element={<MicrositeList />} />
+          <Route path="microsites/buat" element={<MicrositeBuilder />} />
+          <Route path="microsites/edit/:id" element={<MicrositeBuilder />} />
           <Route path="riwayat-aktivitas" element={<ActivityLogPage />} />
         </Route>
 
